@@ -15,7 +15,6 @@ static const FName ExamplePluginTabName("ExamplePlugin");
 
 void FExamplePluginModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	
 	FExamplePluginStyle::Initialize();
 	FExamplePluginStyle::ReloadTextures();
@@ -29,21 +28,18 @@ void FExamplePluginModule::StartupModule()
 		FExecuteAction::CreateRaw(this, &FExamplePluginModule::PluginButtonClicked),
 		FCanExecuteAction());
 
-	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FExamplePluginModule::RegisterMenus));
-	
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ExamplePluginTabName, FOnSpawnTab::CreateRaw(this, &FExamplePluginModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
+	
+	// Append to level editor module so that shortcuts are accessible in level editor
+	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
+	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
+	
 }
 
 void FExamplePluginModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
-
-	UToolMenus::UnRegisterStartupCallback(this);
-
-	UToolMenus::UnregisterOwner(this);
 
 	FExamplePluginStyle::Shutdown();
 
@@ -77,31 +73,6 @@ TSharedRef<SDockTab> FExamplePluginModule::OnSpawnPluginTab(const FSpawnTabArgs&
 void FExamplePluginModule::PluginButtonClicked()
 {
 	FGlobalTabmanager::Get()->TryInvokeTab(ExamplePluginTabName);
-}
-
-void FExamplePluginModule::RegisterMenus()
-{
-	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
-	FToolMenuOwnerScoped OwnerScoped(this);
-
-	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-			Section.AddMenuEntryWithCommandList(FExamplePluginCommands::Get().OpenPluginWindow, PluginCommands);
-		}
-	}
-
-	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FExamplePluginCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
-	}
 }
 
 #undef LOCTEXT_NAMESPACE
