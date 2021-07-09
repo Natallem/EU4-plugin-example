@@ -405,9 +405,9 @@ TSharedRef<SDockTab> FExamplePluginModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		.TabRole(ETabRole::MajorTab)
 		.Label(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
 		.ToolTipText(LOCTEXT("FExamplePluginTabTip", "The tip for the example plugin main tab."));
-	
+
 	TestSuite1TabManager = FGlobalTabmanager::Get()->NewTabManager(TestSuite1Tab);
-	
+
 	TestSuite1TabManager->RegisterTabSpawner("AllExampleTab",
 	                                         FOnSpawnTab::CreateStatic(&SpawnTab, FName("AllExampleTab")))
 	                    .SetDisplayName(NSLOCTEXT("ExampleTabName", "AllExampleTab", "All"));
@@ -445,19 +445,50 @@ TSharedRef<SDockTab> FExamplePluginModule::OnSpawnPluginTab(const FSpawnTabArgs&
 		];*/
 }
 
+TWeakPtr<SWindow> ExamplePluginWindow; // todo static or field?
+
 void FExamplePluginModule::PluginButtonClicked()
 {
-	/*TSharedRef<SWindow> TestWindow = SNew(SWindow)
-					.ClientSize(FVector2D(640,480))
+	/*TSharedPtr<SWindow> ExistingWindow = MasterSequenceSettingsWindow.Pin();
+	if (ExistingWindow.IsValid())
+	{
+		ExistingWindow->BringToFront();
+	}
+
+	TSharedRef<SWindow> TestWindow = SNew(SWindow)
+					.ClientSize(FVector2D(640, 480))
+					.Title(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
 					.AutoCenter(EAutoCenter::PrimaryWorkArea)
-					[
-						SNew(SGlobalInvalidationTest)
-					];
+	[
+		SNew(STextEditTest)
+	];
 
-	TestWindow->SetAllowFastUpdate(true);
+	TestWindow->SetAllowFastUpdate(true); // todo what is it?
 
-	FSlateApplication::Get().AddWindow( TestWindow );*/
-	FGlobalTabmanager::Get()->TryInvokeTab(ExamplePluginTabName);
+	FSlateApplication::Get().AddWindow(TestWindow);*/
+	// FGlobalTabmanager::Get()->TryInvokeTab(ExamplePluginTabName);
+	// UE_LOG(LogTemp, Log, TEXT("Natasha hi!") );
+
+	TSharedPtr<SWindow> ExistingWindow = ExamplePluginWindow.Pin();
+	if (ExistingWindow.IsValid())
+	{
+		ExistingWindow->BringToFront();
+	}
+	else
+	{
+		TSharedRef<SWindow> TestWindow = SNew(SWindow)
+					.ClientSize(FVector2D(640, 480))
+					.Title(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
+					.AutoCenter(EAutoCenter::PrimaryWorkArea)
+		[
+			SNew(STextEditTest)
+		];
+		TestWindow->SetAllowFastUpdate(true); // todo what is it?
+
+		FSlateApplication::Get().AddWindow(TestWindow);
+	}
+
+	ExamplePluginWindow = ExistingWindow;
 }
 
 #undef LOCTEXT_NAMESPACE
