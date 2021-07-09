@@ -27,4 +27,5 @@ private:
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
+	TWeakPtr<SWindow> ExamplePluginWindow;
 };

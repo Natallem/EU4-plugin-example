@@ -341,11 +341,6 @@ protected:
 
 TSharedRef<SDockTab> SpawnTab(const FSpawnTabArgs& Args, FName TabIdentifier)
 {
-	/*
-	*"AllExampleTab", ETabState::OpenedTab)
-	->AddTab("ClassesExampleTab", ETabState::OpenedTab)
-	->AddTab("FilesExampleTab", E
-	 */
 	FText LabelNameText;
 	FText ToolTipText;
 	if (TabIdentifier == FName("AllExampleTab"))
@@ -429,63 +424,32 @@ TSharedRef<SDockTab> FExamplePluginModule::OnSpawnPluginTab(const FSpawnTabArgs&
 			TestSuite1TabManager->RestoreFrom(Layout, SpawnTabArgs.GetOwnerWindow()).ToSharedRef()
 		]
 	);
-	// TestSuite1Tab.
 	return TestSuite1Tab;
-	/*return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
-		[
-			// Put your tab content here!
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(WidgetText)
-			]
-		];*/
 }
 
-TWeakPtr<SWindow> ExamplePluginWindow; // todo static or field?
+
 
 void FExamplePluginModule::PluginButtonClicked()
 {
-	/*TSharedPtr<SWindow> ExistingWindow = MasterSequenceSettingsWindow.Pin();
-	if (ExistingWindow.IsValid())
-	{
-		ExistingWindow->BringToFront();
-	}
-
-	TSharedRef<SWindow> TestWindow = SNew(SWindow)
-					.ClientSize(FVector2D(640, 480))
-					.Title(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
-					.AutoCenter(EAutoCenter::PrimaryWorkArea)
-	[
-		SNew(STextEditTest)
-	];
-
-	TestWindow->SetAllowFastUpdate(true); // todo what is it?
-
-	FSlateApplication::Get().AddWindow(TestWindow);*/
-	// FGlobalTabmanager::Get()->TryInvokeTab(ExamplePluginTabName);
-	// UE_LOG(LogTemp, Log, TEXT("Natasha hi!") );
-
 	TSharedPtr<SWindow> ExistingWindow = ExamplePluginWindow.Pin();
 	if (ExistingWindow.IsValid())
 	{
+		UE_LOG(LogTemp, Log, TEXT("EP : Bring to front window") );
+
 		ExistingWindow->BringToFront();
 	}
 	else
 	{
-		TSharedRef<SWindow> TestWindow = SNew(SWindow)
+		UE_LOG(LogTemp, Log, TEXT("EP : Created new window") );
+		ExistingWindow = SNew(SWindow)
 					.ClientSize(FVector2D(640, 480))
 					.Title(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
 					.AutoCenter(EAutoCenter::PrimaryWorkArea)
 		[
 			SNew(STextEditTest)
 		];
-		TestWindow->SetAllowFastUpdate(true); // todo what is it?
-
-		FSlateApplication::Get().AddWindow(TestWindow);
+		ExistingWindow->SetAllowFastUpdate(true); // todo what is it?
+		FSlateApplication::Get().AddWindow(ExistingWindow.ToSharedRef());
 	}
 
 	ExamplePluginWindow = ExistingWindow;
