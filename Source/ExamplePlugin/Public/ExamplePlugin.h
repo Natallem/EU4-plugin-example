@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SearchEverywhereWindow.h"
 #include "Modules/ModuleManager.h"
 
 class FToolBarBuilder;
@@ -21,11 +22,9 @@ public:
 	
 private:
 
-	void RegisterMenus();
-
-	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
+	// TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
-	TWeakPtr<SWindow> ExamplePluginWindow;
+	TWeakPtr<SSearchEverywhereWindow> ExamplePluginWindow; // todo maybe not import but declaration
 };

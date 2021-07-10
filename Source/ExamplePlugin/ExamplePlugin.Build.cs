@@ -42,6 +42,7 @@ public class ExamplePlugin : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"MainFrame"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
