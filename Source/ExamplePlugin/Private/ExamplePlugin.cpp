@@ -34,10 +34,10 @@ void FExamplePluginModule::StartupModule()
 		FCanExecuteAction());
 
 	// FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ExamplePluginTabName,
-	                                                  // FOnSpawnTab::CreateRaw(
-		                                                  // this, &FExamplePluginModule::OnSpawnPluginTab))
-	                        // .SetDisplayName(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
-	                        // .SetMenuType(ETabSpawnerMenuType::Hidden);
+	// FOnSpawnTab::CreateRaw(
+	// this, &FExamplePluginModule::OnSpawnPluginTab))
+	// .SetDisplayName(LOCTEXT("FExamplePluginTabTitle", "ExamplePlugin"))
+	// .SetMenuType(ETabSpawnerMenuType::Hidden);
 
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
@@ -174,7 +174,7 @@ void FExamplePluginModule::PluginButtonClicked()
 		FVector2D tt4 = ParentWindow->GetInitialDesiredSizeInScreen();
 		float tt5 = ParentWindow->GetDPIScaleFactor();
 
-		ExistingWindow = SNew(SSearchEverywhereWindow); 
+		ExistingWindow = SNew(SSearchEverywhereWindow);
 		// ExistingWindow->SetAllowFastUpdate(true); // todo what is it?
 		FVector2D tt_ = ExistingWindow->GetClientSizeInScreen();
 		FVector2D tt_1 = ExistingWindow->GetDesiredSizeDesktopPixels();
@@ -188,7 +188,11 @@ void FExamplePluginModule::PluginButtonClicked()
 		// GEditor->size
 		// FSlateApplication::Get().AddModalWindow(ExistingWindow.ToSharedRef(), ParentWindow);
 		FSlateApplication::Get().AddWindow(ExistingWindow.ToSharedRef());
-	
+		// const TArray<TSharedRef<SWindow>> t = FSlateApplication::Get().GetTopLevelWindows();
+		// void* t2 = FSlateApplication::Get().GetMouseCaptureWindow();
+		// TSharedPtr<SWindow> t3 = FSlateApplication::Get().GetActiveTopLevelWindow();
+		// FSlateApplication::Get().AddWindowAsNativeChild(
+			// FSlateApplication::Get().GetActiveTopLevelWindow().ToSharedRef(), ExistingWindow.ToSharedRef());
 	}
 
 	ExamplePluginWindow = ExistingWindow;
