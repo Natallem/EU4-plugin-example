@@ -65,6 +65,6 @@ protected:
 	TSharedPtr<SInlineEditableTextBlock> InlineEditableTextBlock;
 	FText InlineEditableText;
 
-	bool bIsPassword;
+	bool bIsPassword = false;
  };
 

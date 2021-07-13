@@ -26,8 +26,9 @@ public:
 		/** Title of the window */
 		SLATE_ATTRIBUTE(FText, SearchRequest)
 	SLATE_END_ARGS()
-
-	void Construct(const FArguments& InArgs);
+	TWeakPtr<SWidget> PreviousFocusedWidget;
+	TSharedPtr< FUICommandList > PluginCommandList;
+	void Construct(const FArguments& InArgs,TWeakPtr<SWidget> NewPreviousFocusedWidget, TSharedPtr< FUICommandList > NewPluginCommandList );
 	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
 	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;

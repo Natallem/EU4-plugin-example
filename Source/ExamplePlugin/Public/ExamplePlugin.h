@@ -19,12 +19,16 @@ public:
 	
 	/** This function will be bound to Command (by default it will bring up plugin window) */
 	void PluginButtonClicked();
-	
+	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
+
 private:
 
 	// TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
+	uint32 LastKeyboardUser = 0;
+	FKey LastKeyboardUserInput;
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TWeakPtr<SSearchEverywhereWindow> ExamplePluginWindow; // todo maybe not import but declaration
+	FDelegateHandle OnApplicationPreInputKeyDownListenerHandle;
 };
