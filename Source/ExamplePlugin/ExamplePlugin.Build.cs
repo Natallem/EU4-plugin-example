@@ -26,6 +26,10 @@ public class ExamplePlugin : ModuleRules
 			new string[]
 			{
 				"Core",
+				"UnrealEd",
+				"SourceControl",
+				"LocalizationService",
+				// ... add other public dependencies that you statically link with here ...
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -42,7 +46,7 @@ public class ExamplePlugin : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"MainFrame"
+				"MainFrame", "LocalizationService"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

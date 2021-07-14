@@ -29,18 +29,25 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 		SWindow::FArguments()
 		.Type(EWindowType::Normal)
 		.ClientSize(WindowSize)
-		// .ClientSize(FVector2D(640, 480))
 		.Style(InArgs._Style)
 		.MinHeight(MinHeight)
 		.MinWidth(MinWidth)
 		.IsPopupWindow(true) // if true isn't shown in task bar
+		.FocusWhenFirstShown(true)
 		.AutoCenter(EAutoCenter::PrimaryWorkArea)
-		// .AutoCenter(EAutoCenter::None)
 		[
-			SNew(SSearchEverywhereWidget)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.FillHeight(1)
+			[
+				// SNew(SBox)[
+				SAssignNew(InnerWidget, SSearchEverywhereWidget)
+				// ]
+			]
+			// SNew(SSearchEverywhereWidget)
 		]
 	);
-	SetAllowFastUpdate(true);
+	// bHasSizingFrame = true;
 	SetOnWindowClosed(FOnWindowClosed::CreateLambda([](const TSharedRef<SWindow>& Window)
 	{
 		// todo save state before close
@@ -53,7 +60,31 @@ void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
 {
 	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
 	SWindow::OnFocusLost(InFocusEvent);
-	// RequestDestroyWindow();
+	if (bNeedToClose)
+	{
+		RequestDestroyWindow();
+	}
+}
+
+void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
+	const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
+{
+	SWindow::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
+	if (NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef()) || NewWidgetPath.ContainsWidget(SharedThis(this)))
+	{
+		bNeedToClose = false;
+		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging contains inner"));
+	}
+	else
+	{
+		bNeedToClose = true;
+		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging NOT contains inner"));
+	}
+	// bNeedToClose = !NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef());
+	if (bNeedToClose)
+	{
+		RequestDestroyWindow();
+	}
 }
 
 FReply SSearchEverywhereWindow::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
@@ -66,12 +97,17 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 {
 	if (!SWindow::OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
 	{
+		if (InKeyEvent.GetKey()==EKeys::Escape)
+		{
+			RequestDestroyWindow();
+		}
 		if (PluginCommandList->ProcessCommandBindings(InKeyEvent))
 		{
 			return FReply::Handled();
 		}
-		
-		if (PreviousFocusedWidget.IsValid() && PreviousFocusedWidget.Pin().IsValid())  // Q need to create shrd_ptr in var
+
+		if (PreviousFocusedWidget.IsValid() && PreviousFocusedWidget.Pin().IsValid())
+			// Q need to create shrd_ptr in var
 		{
 			if (PreviousFocusedWidget.Pin()->OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
 			{
@@ -83,60 +119,6 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 	}
 	return FReply::Handled();
 }
-
-/*
-FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
-{
-	/*TArray<TSharedPtr<FBindingContext>> Contexts;
-	FInputBindingManager::Get().GetKnownInputContexts(Contexts);
-	const FInputChord CheckChord( InKeyEvent.GetKey(), InKeyEvent.IsControlDown(), InKeyEvent.IsAltDown(), InKeyEvent.IsShiftDown(), InKeyEvent.IsCommandDown() );;
-	TSharedRef<FUICommandList>& t = IMainFrameModule::Get().GetMainFrameCommandBindings();
-
-	for (TSharedPtr<FBindingContext>& ptr : Contexts)
-	{
-		const TSharedPtr<FUICommandInfo> Command = FInputBindingManager::Get().FindCommandInContext(
-			ptr->GetContextName(), CheckChord, false);
-		/*if (ptrr != nullptr)
-		{
-			
-			RequestDestroyWindow();
-			return FReply::Unhandled();
-		}#2#
-		// FMainFrameCommands
-		
-		
-		if( Command.IsValid() && Command->HasActiveChord(CheckChord)  )
-		{
-			// Find the bound action for this command
-			// const FUIAction* Action = FUICommandList::Get().GetActionForCommand(Command);
-			const FUIAction* Action = t->GetActionForCommand(Command);
-			// If there is no Action mapped to this command list, continue to the next context
-			if( Action )
-			{
-				if(Action->CanExecute())
-				{
-					// If the action was found and can be executed, do so now
-					bool res = Action->Execute();
-					RequestDestroyWindow();
-					return FReply::Handled();
-				}
-				else
-				{
-					// An action wasn't bound to the command but a chord was found or an action was found but cant be executed
-					
-				}
-			}
-		}
-	}#1#
-
-	return SWindow::OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled();/*)
-	{
-		RequestDestroyWindow();#2#
-		return FReply::Handled();#1#
-	/*}
-	return FReply::Unhandled();#1#
-}
-*/
 
 FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {

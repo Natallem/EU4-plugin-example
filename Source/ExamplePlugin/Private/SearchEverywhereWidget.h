@@ -5,7 +5,8 @@
 class SSearchEverywhereWidget final : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS( SSearchEverywhereWidget ){}
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+	SLATE_BEGIN_ARGS(SSearchEverywhereWidget) {}
 	SLATE_END_ARGS()
 
 	/**
@@ -15,32 +16,13 @@ public:
 	 */
 	void Construct(const FArguments& InArgs);
 
-	void FocusDefaultWidget() const;
-
-	void InlineEditableTextCommited(const FText& NewText, ETextCommit::Type CommitType );
-
-	void OnNumericInputTextChanged( const FText& NewText );
-
-	TSharedPtr<SWidget> OnCustomContextMenuOpening();
-
-	TSharedPtr<SWidget> OnDisabledContextMenuOpening();
-
-	bool IsPassword() const;
-
-	ECheckBoxState GetPasswordCheckState() const;
-
-	void OnPasswordCheckStateChanged(ECheckBoxState NewState);
-
-	void ClearSearchBox() const;
-
-	FSlateColor GetLoopingColor() const;
-
-	FReply LaunchPopUp_OnClicked ();
-
-	void OnPopupTextChanged (const FText& NewText);
-
-	void OnPopupTextCommitted( const FText& NewText, ETextCommit::Type CommitInfo ) const;
+	void OnTextChanged(const FText& Filter);
+	TOptional<EFocusCause> HasInsideUserFocus(uint32 User);
 protected:
+	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
+	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
+	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath) override;
+
 
 	TSharedPtr< SEditableText > EditableText;
 
@@ -66,5 +48,7 @@ protected:
 	FText InlineEditableText;
 
 	bool bIsPassword = false;
+
+	TSharedPtr<class SEditableTextBox> EditableTextBox;
  };
 

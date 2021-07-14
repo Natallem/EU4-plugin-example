@@ -9,7 +9,14 @@
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Input/STextEntryPopup.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
-#include "Widgets/Text/SRichTextBlock.h"
+#include "FeedbackContextEditor.h"
+#include "Toolkits/GlobalEditorCommonCommands.h"
+#include "ScopedSourceControlProgress.h"
+#include "Dialogs/SBuildProgress.h"
+#include "Interfaces/IMainFrameModule.h"
+#include "ScopedLocalizationServiceProgress.h"
+#include "FeedbackContextEditor.h"
+#include "SearchEverywhereWidget.h"
 
 static const FName ExamplePluginTabName("ExamplePlugin");
 
@@ -25,11 +32,7 @@ void FExamplePluginModule::StartupModule()
 		this, &FExamplePluginModule::OnApplicationPreInputKeyDownListener);
 
 	PluginCommands = MakeShareable(new FUICommandList);
-	/*IMainFrameModule::Get().GetMainFrameCommandBindings()->MapAction(
-		FExamplePluginCommands::Get().OpenPluginWindow,
-		FExecuteAction::CreateRaw(this, &FExamplePluginModule::PluginButtonClicked),
-		FCanExecuteAction());*/
-
+	
 	PluginCommands->MapAction(
 		FExamplePluginCommands::Get().OpenPluginWindow,
 		FExecuteAction::CreateRaw(this, &FExamplePluginModule::PluginButtonClicked),
@@ -38,13 +41,14 @@ void FExamplePluginModule::StartupModule()
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
-	// IMainFrameModule::Get().GetMainFrameCommandBindings()->Append(PluginCommands.ToSharedRef());
+	//todo add to asset editor
 }
+
 
 void FExamplePluginModule::ShutdownModule()
 {
 	FExamplePluginStyle::Shutdown();
-	if (OnApplicationPreInputKeyDownListenerHandle.IsValid())
+	if (FSlateApplication::IsInitialized() && OnApplicationPreInputKeyDownListenerHandle.IsValid())
 	{
 		FSlateApplication::Get().OnApplicationPreInputKeyDownListener().Remove(
 			OnApplicationPreInputKeyDownListenerHandle);
@@ -64,23 +68,19 @@ void FExamplePluginModule::PluginButtonClicked()
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("EP : Created new window"));
-		TSharedPtr<FSlateUser> currentUser = FSlateApplication::Get().GetUser(LastKeyboardUser);
-		TWeakPtr<SWidget> pr = currentUser->GetFocusedWidget();
-	
-		ExistingWindow = SNew(SSearchEverywhereWindow, pr, PluginCommands);
+		TWeakPtr<SWidget> PreviousFocusedUserWidget = FSlateApplication::Get().GetUser(LastKeyboardUser)->GetFocusedWidget();
+		ExistingWindow = SNew(SSearchEverywhereWindow, PreviousFocusedUserWidget, PluginCommands);
 		FSlateApplication::Get().AddWindow(ExistingWindow.ToSharedRef());
-		// const TArray<TSharedRef<SWindow>> t = FSlateApplication::Get().GetTopLevelWindows();
-		// void* t2 = FSlateApplication::Get().GetMouseCaptureWindow();
 	}
-
-
 	ExamplePluginWindow = ExistingWindow;
 }
 
 void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent)
 {
 	// todo save many users
-	const FInputChord CheckChord( InKeyEvent.GetKey(),  EModifierKey::FromBools(InKeyEvent.IsControlDown(), InKeyEvent.IsAltDown(), InKeyEvent.IsShiftDown(), InKeyEvent.IsCommandDown()) );
+	const FInputChord CheckChord(InKeyEvent.GetKey(),
+	                             EModifierKey::FromBools(InKeyEvent.IsControlDown(), InKeyEvent.IsAltDown(),
+	                                                     InKeyEvent.IsShiftDown(), InKeyEvent.IsCommandDown()));
 	if (FExamplePluginCommands::Get().OpenPluginWindow->HasActiveChord(CheckChord))
 	{
 		LastKeyboardUser = InKeyEvent.GetUserIndex();

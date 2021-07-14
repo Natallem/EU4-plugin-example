@@ -6,7 +6,7 @@
 
 void FExamplePluginCommands::RegisterCommands()
 {
-	UI_COMMAND(OpenPluginWindow, "ExamplePlugin", "Bring up ExamplePlugin window",  EUserInterfaceActionType::Button,  FInputChord(EModifierKey::Control | EModifierKey::Shift, EKeys::Seven));
+	UI_COMMAND(OpenPluginWindow, "ExamplePlugin", "Bring up ExamplePlugin window",  EUserInterfaceActionType::Button,  FInputChord(EModifierKey::Control, EKeys::T));
 }
 
 #undef LOCTEXT_NAMESPACE

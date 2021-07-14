@@ -5,11 +5,12 @@
 #include "CoreMinimal.h"
 #include "SearchEverywhereWindow.h"
 #include "Modules/ModuleManager.h"
-
+#include "FeedbackContextEditor.h"
+#include "Toolkits/GlobalEditorCommonCommands.h"
 class FToolBarBuilder;
 class FMenuBuilder;
 
-class FExamplePluginModule : public IModuleInterface
+class FExamplePluginModule : public IModuleInterface, FGlobalEditorCommonCommands
 {
 public:
 
@@ -26,9 +27,11 @@ private:
 	// TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 
 private:
+	FFeedbackContextEditor e; //todo delete
 	uint32 LastKeyboardUser = 0;
 	FKey LastKeyboardUserInput;
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TWeakPtr<SSearchEverywhereWindow> ExamplePluginWindow; // todo maybe not import but declaration
+	TWeakPtr<SWindow> BuildProgressWindow; // todo maybe not import but declaration
 	FDelegateHandle OnApplicationPreInputKeyDownListenerHandle;
 };

@@ -1,4 +1,6 @@
 #pragma once
+#include "SearchEverywhereWidget.h"
+
 enum ESearchModeTab
 {
 	/** todo comment */
@@ -10,6 +12,7 @@ enum ESearchModeTab
 class SSearchEverywhereWindow final : public SWindow
 {
 public:
+
 	SLATE_BEGIN_ARGS(SSearchEverywhereWindow)
 			: _Type(ESearchModeTab::All)
 			  , _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
@@ -28,10 +31,15 @@ public:
 	SLATE_END_ARGS()
 	TWeakPtr<SWidget> PreviousFocusedWidget;
 	TSharedPtr< FUICommandList > PluginCommandList;
-	void Construct(const FArguments& InArgs,TWeakPtr<SWidget> NewPreviousFocusedWidget, TSharedPtr< FUICommandList > NewPluginCommandList );
+	TSharedPtr<SSearchEverywhereWidget> InnerWidget;
+	void Construct(const FArguments& InArgs,TWeakPtr<SWidget> NewPreviousFocusedWidget, TSharedPtr< FUICommandList > NewPluginCommandList);
 	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
-	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
+	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
+		const FFocusEvent& InFocusEvent) override;
+	
+	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override; // todo delete, do nothing
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 private:
+	bool bNeedToClose = true;
 };
