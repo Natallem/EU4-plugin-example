@@ -17,7 +17,6 @@
 #include "ScopedLocalizationServiceProgress.h"
 #include "FeedbackContextEditor.h"
 #include "SearchEverywhereWidget.h"
-
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
@@ -59,6 +58,15 @@ void FExamplePluginModule::ShutdownModule()
 
 void FExamplePluginModule::PluginButtonClicked()
 {
+
+
+	/*const FVector2D TabListSize(700.0f, 486.0f);
+
+	// Create the contents of the popup
+	TSharedRef<SWidget> ActualWidget = SNew(SGlobalTabSwitchingDialog, TabListSize,FInputChord());
+
+	OpenPopupMenu(ActualWidget, TabListSize);*/
+	
 	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = ExamplePluginWindow.Pin();
 	if (ExistingWindow.IsValid())
 	{

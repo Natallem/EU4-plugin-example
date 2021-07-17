@@ -7,58 +7,109 @@
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Input/STextEntryPopup.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScrollBorder.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
+#include "STextPropertyEditableTextBox.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "EditorStyleSet.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
 void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
 {
-	// bIsPassword = true;
+	int ElementNumber = 30;
+	StringItems.Reserve(ElementNumber);
+	for (int i = 0; i < ElementNumber; i++)
+	{
+		FString str("String number ");
+		str.AppendInt(i);
+		str.AppendChar('\n');
+		StringItems.Add(MakeShared<FString>(str));
+	}
+	ListView = SNew(SListViewWidget)
+		.IsFocusable(true)
+		.ItemHeight(64)
+		.SelectionMode(ESelectionMode::None)
+		.ListItemsSource(&StringItems)
+		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget);
 
-	// InlineEditableText = LOCTEXT( "TestingInlineEditableTextBlock", "Testing inline editable text block!" );
+	const TSharedRef<SWidget> ListTableWidget = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SScrollBorder, ListView.ToSharedRef())
+			[
+				ListView.ToSharedRef()
+			]
+		];
 
-	// Animation = FCurveSequence(0, 5);
+	const TSharedRef<SWidget> TabsWidget = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(SButton)
+			.Text(LOCTEXT("Button1Text", "Button1"))
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(SButton)
+			.Text(LOCTEXT("Button2Text", "Button2"))
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(SButton)
+			.Text(LOCTEXT("Button3Text", "Button3"))
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(SButton)
+			.Text(LOCTEXT("Button4Text", "Button4"))
+		];
 
-	// Animation.Play(this->AsShared(), true);
+	const TSharedRef<SWidget> SearchTableWidget =
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.Padding(10.0f)
+		.FillWidth(1.0f)
+		[
+			SAssignNew(EditableTextBox, SEditableText)
+			.Text(LOCTEXT("DisabledContextMenuInput", "Type here to search ... "))
+			.RevertTextOnEscape(true)
+			.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
+		];
+
 	ChildSlot
 	[
-		SNew(SBox)
-			// .WidthOverride(600)
-			// .HeightOverride(400)
-			
+		SNew(SBorder)
+		.BorderImage(FEditorStyle::Get().GetBrush("ControlTabMenu.Background"))
+		.ForegroundColor(FCoreStyle::Get().GetSlateColor("DefaultForeground"))
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			
+			SNew(SBox)
 			[
-				SAssignNew(EditableTextBox, SEditableTextBox)
-				.Text(LOCTEXT("DisabledContextMenuInput", "This text box has no context menu"))
-				.RevertTextOnEscape(true)
-				.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
-				// .HintText(LOCTEXT("DisabledContextMenuHint", "No context menu..."))
-				// .OnContextMenuOpening(this, &SSearchEverywhereWidget::OnDisabledContextMenuOpening)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.HAlign(HAlign_Left)
+				.AutoHeight()
+				[
+					TabsWidget
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SearchTableWidget
+				]
+				+ SVerticalBox::Slot()
+				.FillHeight(1.0f)
+				.Padding(0)
+				[
+					ListTableWidget
+				]
 			]
 		]
 	];
-	
-	/*this->ChildSlot
-	[
-		SNew(SScrollBox)
-		+ SScrollBox::Slot()
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(5)
-			[
-				SAssignNew(EditableTextBox, SEditableTextBox)
-					.Text(LOCTEXT("DisabledContextMenuInput", "This text box has no context menu"))
-					.RevertTextOnEscape(true)
-					.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
-					.HintText(LOCTEXT("DisabledContextMenuHint", "No context menu..."))
-					.OnContextMenuOpening(this, &SSearchEverywhereWidget::OnDisabledContextMenuOpening)
-			]
-		]
-	];*/
 }
 
 FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
@@ -72,10 +123,6 @@ void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 	EditableTextBox->SetText(Filter);
 }
 
-TOptional<EFocusCause> SSearchEverywhereWidget::HasInsideUserFocus(uint32 User)
-{
-	return EditableText->HasUserFocus(User);
-}
 
 void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
 {
@@ -91,12 +138,28 @@ FReply SSearchEverywhereWidget::OnFocusReceived(const FGeometry& MyGeometry, con
 	return SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
 }
 
+
 void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
-	const FWidgetPath& NewWidgetPath)
+                                              const FWidgetPath& NewWidgetPath)
 {
 	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusChanging"));
 
 	SCompoundWidget::OnFocusChanging(PreviousFocusPath, NewWidgetPath);
+}
+
+
+TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
+	const TSharedRef<STableViewBase>& OwnerTable)
+{
+	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
+	[
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(*InItem))
+		]
+	];
 }
 
 

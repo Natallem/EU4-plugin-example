@@ -12,13 +12,12 @@ enum ESearchModeTab
 class SSearchEverywhereWindow final : public SWindow
 {
 public:
-
+	
 	SLATE_BEGIN_ARGS(SSearchEverywhereWindow)
 			: _Type(ESearchModeTab::All)
 			  , _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
 			  , _SearchRequest()
-		{
-		}
+		{}
 
 		/** Type of this window */
 		SLATE_ARGUMENT(ESearchModeTab, Type)
@@ -29,9 +28,10 @@ public:
 		/** Title of the window */
 		SLATE_ATTRIBUTE(FText, SearchRequest)
 	SLATE_END_ARGS()
+	
 	TWeakPtr<SWidget> PreviousFocusedWidget;
 	TSharedPtr< FUICommandList > PluginCommandList;
-	TSharedPtr<SSearchEverywhereWidget> InnerWidget;
+	TSharedPtr<SWidget> InnerWidget; // todo specify? to SSearchWindow
 	void Construct(const FArguments& InArgs,TWeakPtr<SWidget> NewPreviousFocusedWidget, TSharedPtr< FUICommandList > NewPluginCommandList);
 	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
