@@ -18,10 +18,10 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 	const float MinHeight = 400;
 
 	// size of window should be a multiple of 10 todo 
-	const float PartialParentWidth = round(ParentScreenSize.X / ParentDPIScaleFactor * ScaleWindow );
+	const float PartialParentWidth = round(ParentScreenSize.X / ParentDPIScaleFactor * ScaleWindow);
 
 	// size of window should be a multiple of 10 todo
-	const float PartialParentHeight = round(ParentScreenSize.Y / ParentDPIScaleFactor * ScaleWindow );
+	const float PartialParentHeight = round(ParentScreenSize.Y / ParentDPIScaleFactor * ScaleWindow);
 
 	const FVector2D WindowSize = FVector2D(FMath::Max(PartialParentWidth, MinWidth),
 	                                       FMath::Max(PartialParentHeight, MinHeight));
@@ -46,12 +46,12 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 				SAssignNew(InnerWidget, SSearchEverywhereWidget)
 				// ]
 
-				
+
 			]
 			// SNew(SSearchEverywhereWidget)
 		]
 	);
-	
+
 	// bHasSizingFrame = true;
 	SetOnWindowClosed(FOnWindowClosed::CreateLambda([](const TSharedRef<SWindow>& Window)
 	{
@@ -72,10 +72,11 @@ void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
 }
 
 void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
-	const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
+                                              const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
 {
 	SWindow::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
-	if (NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef()) || NewWidgetPath.ContainsWidget(SharedThis(this))) // todo change only for this window in path
+	if (NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef()) || NewWidgetPath.ContainsWidget(SharedThis(this)))
+		// todo change only for this window in path
 	{
 		bNeedToClose = false;
 		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging contains inner"));
@@ -102,7 +103,7 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 {
 	if (!SWindow::OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
 	{
-		if (InKeyEvent.GetKey()==EKeys::Escape)
+		if (InKeyEvent.GetKey() == EKeys::Escape)
 		{
 			RequestDestroyWindow();
 		}
@@ -128,4 +129,9 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
 	return SWindow::OnKeyUp(MyGeometry, InKeyEvent);
+}
+
+void SSearchEverywhereWindow::OnNewDataFound()
+{
+	int x = 10;
 }

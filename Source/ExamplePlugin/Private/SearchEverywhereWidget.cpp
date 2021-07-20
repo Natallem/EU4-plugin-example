@@ -114,6 +114,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
 
 FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
+	
 	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
 }
 

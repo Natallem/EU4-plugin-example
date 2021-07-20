@@ -3,14 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CallbackHandler.h"
 #include "SearchEverywhereWindow.h"
 #include "Modules/ModuleManager.h"
 #include "FeedbackContextEditor.h"
 #include "Toolkits/GlobalEditorCommonCommands.h"
+#include "Searcher.h"
+
 class FToolBarBuilder;
 class FMenuBuilder;
 
-class FExamplePluginModule : public IModuleInterface, FGlobalEditorCommonCommands
+class FExamplePluginModule : public IModuleInterface, public TSharedFromThis<FExamplePluginModule, ESPMode::ThreadSafe>
 {
 public:
 
@@ -21,6 +24,8 @@ public:
 	/** This function will be bound to Command (by default it will bring up plugin window) */
 	void PluginButtonClicked();
 	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
+
+	static void OnNewDataFound();
 
 private:
 
@@ -34,4 +39,9 @@ private:
 	TWeakPtr<SSearchEverywhereWindow> ExamplePluginWindow; // todo maybe not import but declaration
 	TWeakPtr<SWindow> BuildProgressWindow; // todo maybe not import but declaration
 	FDelegateHandle OnApplicationPreInputKeyDownListenerHandle;
+	FEvent * HelloWindowEvent = nullptr;
+	FSearcher * Searcher = nullptr;
+	TSharedRef<class FCallbackHandler, ESPMode::ThreadSafe> CallbackHandler = MakeShared<FCallbackHandler, ESPMode::ThreadSafe>();;
+
 };
+
