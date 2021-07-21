@@ -54,6 +54,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
 		.AutoWidth()
 		[
 			SNew(SButton)
+			.OnClicked(this, &SSearchEverywhereWidget::OnButtonClicked)
 			.Text(LOCTEXT("Button2Text", "Button2"))
 		]
 		+ SHorizontalBox::Slot()
@@ -114,7 +115,6 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
 
 FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	
 	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
 }
 
@@ -161,6 +161,18 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 			.Text(FText::FromString(*InItem))
 		]
 	];
+}
+
+FReply SSearchEverywhereWidget::OnButtonClicked()
+{
+	static int i = 100;
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget Button Clicked"));
+	FString str("String number ");
+	str.AppendInt(i++);
+	str.AppendChar('\n');
+	StringItems.Add(MakeShared<FString>(str));
+	ListView->RebuildList();
+	return FReply::Handled();
 }
 
 

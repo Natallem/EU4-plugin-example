@@ -21,7 +21,7 @@ protected:
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem, const TSharedRef<STableViewBase>& OwnerTable);
 
 private:
-	
+	FReply OnButtonClicked();
 	void OnTextChanged(const FText& Filter);
 	TSharedRef<ITableRow> OnGenerateWidgetForList(FListItemPtr InItem, const TSharedRef<STableViewBase>& OwnerTable );
 
