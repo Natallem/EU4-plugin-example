@@ -2,7 +2,7 @@
 
 #include "ExamplePlugin.h"
 
-#include "ExampleAsyncTask.h"
+#include "Multithreading/ExampleAsyncTask.h"
 #include "ExamplePluginStyle.h"
 #include "ExamplePluginCommands.h"
 #include "LevelEditor.h"
@@ -20,6 +20,8 @@
 #include "FeedbackContextEditor.h"
 #include "CallbackHandler.h"
 #include "SearchEverywhereWidget.h"
+#include "Multithreading/Searcher.h"
+#include "Dictionary/Dictionary.h"
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
@@ -28,6 +30,7 @@ void FExamplePluginModule::StartupModule()
 {
 	FExamplePluginStyle::Initialize();
 	FExamplePluginStyle::ReloadTextures();
+	FDictionary d;
 
 	FExamplePluginCommands::Register();
 	OnApplicationPreInputKeyDownListenerHandle = FSlateApplication::Get().OnApplicationPreInputKeyDownListener().AddRaw(

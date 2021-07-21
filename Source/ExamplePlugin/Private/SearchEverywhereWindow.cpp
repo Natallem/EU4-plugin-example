@@ -26,7 +26,6 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 	const FVector2D WindowSize = FVector2D(FMath::Max(PartialParentWidth, MinWidth),
 	                                       FMath::Max(PartialParentHeight, MinHeight));
 
-	// const FVector2D TabListSize(700.0f, 486.0f);
 	SWindow::Construct(
 		SWindow::FArguments()
 		.Type(EWindowType::Normal)
@@ -42,17 +41,10 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 			+ SVerticalBox::Slot()
 			.FillHeight(1)
 			[
-				// SNew(SBox)[
 				SAssignNew(InnerWidget, SSearchEverywhereWidget)
-				// ]
-
-
 			]
-			// SNew(SSearchEverywhereWidget)
 		]
 	);
-
-	// bHasSizingFrame = true;
 	SetOnWindowClosed(FOnWindowClosed::CreateLambda([](const TSharedRef<SWindow>& Window)
 	{
 		// todo save state before close

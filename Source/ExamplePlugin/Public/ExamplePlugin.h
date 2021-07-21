@@ -8,7 +8,7 @@
 #include "Modules/ModuleManager.h"
 #include "FeedbackContextEditor.h"
 #include "Toolkits/GlobalEditorCommonCommands.h"
-#include "Searcher.h"
+#include "Multithreading/Searcher.h"
 
 class FToolBarBuilder;
 class FMenuBuilder;
