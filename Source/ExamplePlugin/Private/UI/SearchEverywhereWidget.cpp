@@ -12,11 +12,13 @@
 #include "STextPropertyEditableTextBox.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "EditorStyleSet.h"
+#include "Multithreading/Searcher.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
-void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
+void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSearcher> SearcherArgument)
 {
+	Searcher = SearcherArgument;
 	int ElementNumber = 30;
 	StringItems.Reserve(ElementNumber);
 	for (int i = 0; i < ElementNumber; i++)
@@ -113,6 +115,21 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs)
 	];
 }
 
+void SSearchEverywhereWidget::UpdateShownResults()
+{
+	TArray<FString> array = Searcher->GetRequestData();
+	if (ShouldCleanList)
+	{
+		ShouldCleanList = false;
+		StringItems.Empty();
+	}
+	for (FString & Str : array)
+	{
+		StringItems.Add(MakeShared<FString>(Str));
+	}
+	ListView->RebuildList();
+}
+
 FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
 	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
@@ -120,10 +137,9 @@ FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKe
 
 void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 {
-	int x = 10;
-	EditableTextBox->SetText(Filter);
+	ShouldCleanList = true; //todo maybe just clean?
+	Searcher->SetInput(Filter.ToString());
 }
-
 
 void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
 {

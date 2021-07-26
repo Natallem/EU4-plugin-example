@@ -1,4 +1,5 @@
 #pragma once
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 
 
 class SSearchEverywhereWidget final : public SCompoundWidget
@@ -11,7 +12,8 @@ public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWidget) {}
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs,TSharedRef<class FSearcher> Searcher);
+	void UpdateShownResults();
 
 protected:
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath) override;
@@ -29,5 +31,7 @@ private:
 	TSharedPtr<SListViewWidget> ListView;
 	TArray<FListItemPtr> StringItems;
 	TSharedPtr<class SEditableText> EditableTextBox;
+	TSharedPtr< FSearcher> Searcher;
+	bool ShouldCleanList = false;
 };
 

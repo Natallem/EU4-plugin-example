@@ -1,6 +1,9 @@
 #include "Dictionary.h"
 
+#include "Multithreading/Task.h"
 #include "Misc/FileHelper.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 
 FDictionary::FDictionary()
 {
@@ -18,29 +21,66 @@ void FDictionary::GetTxtData(FString path)
 	FFileHelper::LoadANSITextFileToStrings(*path, NULL, DictionaryStringArray);
 }
 
-bool FDictionary::IsSatisfiesRequest(const FString& Word, const FString& Pattern, const TArray<int>& PArray)
+TOptional<FString> FDictionary::FindNextWord(FTask& Task, const FThreadSafeCounter& RequestCounter)
+{
+	static const int IterationBeforeCheck = 100; // Parameter
+	int IterationCounter = 0;
+	if (Task.NextIndexToCheck >= DictionaryStringArray.Num())
+		return TOptional<FString>();
+	UE_LOG(LogTemp, Log, TEXT("EP : FDictionary index=%d input=%s"), Task.NextIndexToCheck, &Task.Request);
+
+	for (int i = Task.NextIndexToCheck; i < DictionaryStringArray.Num(); ++i)
+	{
+
+		++IterationCounter;
+		if (IterationCounter == IterationBeforeCheck)
+		{
+			if (RequestCounter.GetValue() != Task.TaskId)
+			{
+				UE_LOG(LogTemp, Log, TEXT("EP : FDictionary id changed"));
+
+				return TOptional<FString>();
+			}
+			IterationCounter = 0;
+		}
+		if (IsSatisfiesRequest(DictionaryStringArray[i], Task.Request, Task.PArray))
+		{
+			int x = 10;
+			--Task.DesiredSize;
+			Task.NextIndexToCheck = i + 1;
+			return DictionaryStringArray[i];
+		}
+	}
+	Task.NextIndexToCheck = DictionaryStringArray.Num();
+	Task.bIsCompleteSearching = true;
+	return TOptional<FString>();
+}
+
+bool FDictionary::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern, const TArray<int>& PArray)
 {
 	int tail = -1;
-	
-	for (int i = 0; i < Word.Len(); i++) {
-		while (tail != -1 && Word[i] != Pattern[tail + 1])
+
+	for (int i = 0; i < StringInWhichWeFindPattern.Len(); i++)
+	{
+		while (tail != -1 && StringInWhichWeFindPattern[i] != Pattern[tail + 1])
 			tail = PArray[tail];
-		if (Word[i] == Pattern[tail + 1])
+		if (StringInWhichWeFindPattern[i] == Pattern[tail + 1])
 			tail++;
-		if (tail == Pattern.Len() - 1) {
+		if (tail == Pattern.Len() - 1)
+		{
 			return true;
 		}
 	}
 	return false;
 }
 
-TArray<int> FDictionary::CreatePArray(FString& pattern)
+TArray<int> FDictionary::CreatePArray(const FString& pattern)
 {
 	TArray<int> Result;
 	Result.Reserve(pattern.Len());
 	for (int i = 0; i < pattern.Len(); ++i)
 	{
-		Result[i] = -1;
+		Result.Push(-1);
 	}
 	for (int r = 1, l = -1; r < pattern.Len(); r++)
 	{
@@ -52,16 +92,3 @@ TArray<int> FDictionary::CreatePArray(FString& pattern)
 	return Result;
 }
 
-TArray<FString> FDictionary::FindResultForRequest(FString&& Request)
-{
-	TArray<FString> Result;
-	TArray<int> PArray = CreatePArray(Request);
-	for (FString& Word : DictionaryStringArray)
-	{
-		if (IsSatisfiesRequest(Word, Request,))
-		{
-			Result.Push(Word);
-		}
-	}
-	return Result;
-}

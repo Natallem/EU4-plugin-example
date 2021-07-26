@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Framework/Commands/Commands.h"
-#include "ExamplePluginStyle.h"
+#include "UI/ExamplePluginStyle.h"
 
 class FExamplePluginCommands : public TCommands<FExamplePluginCommands>
 {

@@ -2,11 +2,13 @@
 
 #include "SearchEverywhereWidget.h"
 #include "Interfaces/IMainFrameModule.h"
+#include "Multithreading/Searcher.h"
 #include "Physics/Experimental/ChaosInterfaceWrapper.h"
 
 void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
-                                        TSharedPtr<FUICommandList> NewPluginCommandList)
+                                        TSharedPtr<FUICommandList> NewPluginCommandList,TSharedRef<FSearcher> SearcherArgument)
 {
+	Searcher = SearcherArgument;
 	PreviousFocusedWidget = NewPreviousFocusedWidget;
 	PluginCommandList = NewPluginCommandList;
 	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow Construct"));
@@ -41,7 +43,7 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 			+ SVerticalBox::Slot()
 			.FillHeight(1)
 			[
-				SAssignNew(InnerWidget, SSearchEverywhereWidget)
+				SAssignNew(InnerWidget, SSearchEverywhereWidget, SearcherArgument)
 			]
 		]
 	);
@@ -126,4 +128,9 @@ FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyE
 void SSearchEverywhereWindow::OnNewDataFound()
 {
 	int x = 10;
+}
+
+void SSearchEverywhereWindow::UpdateShownResults()
+{
+	InnerWidget->UpdateShownResults();
 }

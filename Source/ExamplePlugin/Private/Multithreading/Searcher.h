@@ -1,47 +1,60 @@
 #pragma once
+#include "MessageEndpoint.h"
+#include "Dictionary/Dictionary.h"
+#include "ResultProcessing/InputResult.h"
 
 class FSearcher : public FRunnable
 {
-	
+private:
+	struct FHeartbeatRecipient
+	{
+		FHeartbeatRecipient(const TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
+			const FMessageAddress& ConnectionAddress)
+			: MessageEndpoint(MessageEndpoint),
+			  ConnectionAddress(ConnectionAddress)
+		{
+		}
+
+		TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
+		FMessageAddress ConnectionAddress;
+	};
+
 public:
-	DECLARE_DELEGATE(FDataPortionFoundDelegate);
+	// DECLARE_DELEGATE(FDataPortionFoundDelegate);
+	explicit FSearcher(int ChunkSize, 	                   const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint, const FMessageAddress& RecipientAddress);
 
-	FSearcher();
-	//Destructor
-	virtual ~FSearcher() override;
-
-	//Use this method to kill the thread!!
+	virtual ~FSearcher() override = default;
 	void EnsureCompletion();
 
-	//Pause the thread 
-	void PauseThread();
+	virtual bool Init() override;
+	virtual uint32 Run() override;
+	virtual void Stop() override;
 
-	//Continue/UnPause the thread
-	void ContinueThread();
-
-	//FRunnable interface.
-	virtual bool Init();
-	virtual uint32 Run();
-	virtual void Stop();
-
-	bool IsThreadPaused();
+	TArray<FString> GetRequestData();
+	void SetInput(const FString& NewInput);
+	void FindMoreDataResult();
 	
-	FEvent* GetSayHelloEvent() const
-	{
-		return SayHelloEvent;
-	}
-	FDataPortionFoundDelegate& OnNewDataFound();
+	// FDataPortionFoundDelegate& OnNewDataFound();
 
 private:
-	//Thread to run the worker FRunnable on
-	FRunnableThread* Thread;
+	uint32 ChunkSize;
+	FThreadSafeCounter RequestCounter;
+	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
+	TUniquePtr<FRunnableThread> Thread;
+	FEventRef WakeUpWorkerEvent;
+	FThreadSafeBool m_Kill = false;
+	// FDataPortionFoundDelegate DataPortionFoundDelegate;
+	FCriticalSection InputOperationSection;
+	FInputResult Result;
+	FDictionary Dictionary;
+	FHeartbeatRecipient Recipient;
 
-	FCriticalSection Mutex;
-	FEvent * SayHelloEvent;
+	bool IsNotifiedMainThread = false; // todo maybe threadsafe?
 
-	//As the name states those members are Thread safe
-	FThreadSafeBool m_Kill;
-	FThreadSafeBool m_Pause;
-	FDataPortionFoundDelegate DataPortionFoundDelegate;
+	void NotifyMainThread();
+	inline bool ReturnBoolFunc();
+	bool SaveTaskStateToResult(FTask& Task);
+	bool AddFoundWordToResult(FString&& Word, int32 TaskId);
+	bool AllWordsFound(int32 InputId);
 
 };
