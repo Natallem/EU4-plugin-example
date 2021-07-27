@@ -2,22 +2,23 @@
 
 #include "MessageEndpoint.h"
 #include "MessageEndpointBuilder.h"
-#include "HAL/ThreadManager.h"
 #include "UI/SearchEverywhereWindow.h"
 
 FCallbackHandler::FCallbackHandler(TWeakPtr<SSearchEverywhereWindow>& WindowToPassResult): WindowToPassResult(
 	WindowToPassResult)
 {
 	MessageEndpoint = FMessageEndpoint::Builder(TEXT("LiveLinkMessageBusSource"))
-	                  .Handling<FWordsFound>(this, &FCallbackHandler::HandleFoundWords)
-	;
-	uint32 ThreadId = FPlatformTLS::GetCurrentThreadId();
-	FString ThreadName = FThreadManager::Get().GetThreadName(ThreadId);
+		.Handling<FWordsFound>(this, &FCallbackHandler::HandleFoundWords);
 }
 
 TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> FCallbackHandler::GetMessageEndpoint() const
 {
 	return MessageEndpoint;
+}
+
+FCallbackHandler::~FCallbackHandler()
+{
+	FMessageEndpoint::SafeRelease(MessageEndpoint);
 }
 
 void FCallbackHandler::HandleFoundWords(const FWordsFound& Message,

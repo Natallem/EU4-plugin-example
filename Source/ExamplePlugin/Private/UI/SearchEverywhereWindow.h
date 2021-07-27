@@ -1,5 +1,4 @@
 #pragma once
-#include "SearchEverywhereWidget.h"
 
 enum ESearchModeTab
 {
@@ -32,19 +31,19 @@ public:
 
 	TWeakPtr<SWidget> PreviousFocusedWidget;
 	TSharedPtr<FUICommandList> PluginCommandList;
-	TSharedPtr<SSearchEverywhereWidget> InnerWidget; // todo specify? to SSearchWindow
+	TSharedPtr<class SSearchEverywhereWidget> InnerWidget; // todo specify? to SSearchWindow
 	void Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
 	               TSharedPtr<FUICommandList> NewPluginCommandList, TSharedRef<class FSearcher> Searcher);
-	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
-	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
-	                             const FFocusEvent& InFocusEvent) override;
 
 	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
+	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
+	                             const FFocusEvent& InFocusEvent) override;
+	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
+
 	// todo delete, do nothing
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 
-	void OnNewDataFound();
 	void UpdateShownResults();
 private:
 	TSharedPtr<FSearcher> Searcher;

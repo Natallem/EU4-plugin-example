@@ -6,4 +6,3 @@ struct FWordsFound
 {
 	GENERATED_USTRUCT_BODY()
 };
-

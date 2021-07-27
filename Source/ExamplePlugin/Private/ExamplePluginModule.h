@@ -2,11 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Multithreading/CallbackHandler.h"
-#include "Modules/ModuleManager.h"
-#include "FeedbackContextEditor.h"
-#include "Toolkits/GlobalEditorCommonCommands.h"
 #include "Multithreading/Searcher.h"
 
 class FToolBarBuilder;
@@ -33,6 +29,5 @@ private:
 	TSharedRef<FCallbackHandler, ESPMode::ThreadSafe> CallbackHandler = MakeShared<
 		FCallbackHandler, ESPMode::ThreadSafe>(ExamplePluginWindow);
 	TSharedRef<FSearcher> Searcher = MakeShared<FSearcher>(ResultChunkSize,
-	                                                       CallbackHandler->GetMessageEndpoint(),
-	                                                       CallbackHandler->GetMessageEndpoint()->GetAddress());
+	                                                       CallbackHandler->GetMessageEndpoint());
 };

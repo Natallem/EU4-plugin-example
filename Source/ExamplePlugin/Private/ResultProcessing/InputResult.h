@@ -1,10 +1,10 @@
 #pragma once
-// #include "Multithreading/Searcher.h"
 
-class FInputResult
+struct  FInputResult
 {
-public:
+
 	FInputResult(int32 Id, const FString& Input, int32 DesiredResultSize, int32 DesiredBufferSize);
+
 	void MoveFromBufferToMainResult(class FSearcher& Searcher);
 
 	int32 Id;

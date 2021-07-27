@@ -5,23 +5,8 @@
 
 class FSearcher : public FRunnable
 {
-private:
-	struct FHeartbeatRecipient
-	{
-		FHeartbeatRecipient(const TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
-		                    const FMessageAddress& ConnectionAddress)
-			: MessageEndpoint(MessageEndpoint),
-			  ConnectionAddress(ConnectionAddress)
-		{
-		}
-
-		TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
-		FMessageAddress ConnectionAddress;
-	};
-
 public:
-	explicit FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
-	                   const FMessageAddress& RecipientAddress);
+	explicit FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint);
 
 	virtual ~FSearcher() override = default;
 	void EnsureCompletion();
@@ -42,14 +27,13 @@ private:
 	uint32 ChunkSize;
 	FThreadSafeCounter RequestCounter;
 	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
-	TUniquePtr<FRunnableThread> Thread;
 	FEventRef WakeUpWorkerEvent;
 	FThreadSafeBool m_Kill = false;
 	FCriticalSection InputOperationSection;
 	FInputResult Result;
 	FDictionary Dictionary;
-	FHeartbeatRecipient Recipient;
-	bool IsNotifiedMainThread = false; // todo maybe threadsafe? No need because call under lock
+	bool IsNotifiedMainThread = false;
+	TUniquePtr<FRunnableThread> Thread;
 
 	bool SaveTaskStateToResult(FSearchTask& Task);
 	bool AddFoundWordToResult(FString&& Word, int32 TaskId);

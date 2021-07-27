@@ -2,11 +2,10 @@
 
 #include "SearchEverywhereWidget.h"
 #include "Interfaces/IMainFrameModule.h"
-#include "Multithreading/Searcher.h"
-#include "Physics/Experimental/ChaosInterfaceWrapper.h"
 
 void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
-                                        TSharedPtr<FUICommandList> NewPluginCommandList,TSharedRef<FSearcher> SearcherArgument)
+                                        TSharedPtr<FUICommandList> NewPluginCommandList,
+                                        TSharedRef<FSearcher> SearcherArgument)
 {
 	Searcher = SearcherArgument;
 	PreviousFocusedWidget = NewPreviousFocusedWidget;
@@ -55,21 +54,22 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 }
 
 
-void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
+FReply SSearchEverywhereWindow::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
 {
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
-	SWindow::OnFocusLost(InFocusEvent);
-	if (bNeedToClose)
-	{
-		RequestDestroyWindow();
-	}
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusReceived"));
+	return FReply::Handled();
 }
+
 
 void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
                                               const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
 {
+	FString t1 = PreviousFocusPath.ToWidgetPathRef()->ToString();
+	FString t2 = NewWidgetPath.ToString();
+
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging PrevPath: %s NewPat %s"), *t1, *t2);
 	SWindow::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
-	if (NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef()) || NewWidgetPath.ContainsWidget(SharedThis(this)))
+	if (NewWidgetPath.ContainsWidget(SharedThis(this)))
 		// todo change only for this window in path
 	{
 		bNeedToClose = false;
@@ -81,16 +81,10 @@ void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging NOT contains inner"));
 	}
 	// bNeedToClose = !NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef());
-	if (bNeedToClose)
+	/*if (bNeedToClose)
 	{
 		RequestDestroyWindow();
-	}
-}
-
-FReply SSearchEverywhereWindow::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusReceived"));
-	return FReply::Handled();
+	}*/
 }
 
 FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
@@ -120,14 +114,20 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 	return FReply::Handled();
 }
 
+void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
+{
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
+	{		SWindow::OnFocusLost(InFocusEvent);	}
+	SWindow::OnFocusLost(InFocusEvent);;
+	if (bNeedToClose)
+	{
+		RequestDestroyWindow();
+	}
+}
+
 FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
 	return SWindow::OnKeyUp(MyGeometry, InKeyEvent);
-}
-
-void SSearchEverywhereWindow::OnNewDataFound()
-{
-	int x = 10;
 }
 
 void SSearchEverywhereWindow::UpdateShownResults()

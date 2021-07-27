@@ -2,18 +2,13 @@
 
 #include "SearchTask.h"
 #include "Messages/WordsFoundMessage.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+
 //todo think about reserve for array
-FSearcher::FSearcher(int ChunkSize,
-                     const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
-                     const FMessageAddress& RecipientAddress)
+FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint)
 	: ChunkSize(ChunkSize),
-	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal)),
+	  MessageEndpoint(MessageEndpoint),
 	  Result(0, FString(), 0, 0),
-	  Recipient(MessageEndpoint, RecipientAddress)
+	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal))
 {
 }
 
@@ -227,9 +222,9 @@ void FSearcher::NotifyMainThread()
 	if (!IsNotifiedMainThread)
 	{
 		IsNotifiedMainThread = true;
-		if (TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = Recipient.MessageEndpoint.Pin())
+		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
 		{
-			CurrentMessageEndpoint->Send(new FWordsFound(), Recipient.ConnectionAddress);
+			CurrentMessageEndpoint->Send(new FWordsFound(), CurrentMessageEndpoint->GetAddress());
 		}
 	}
 }
@@ -257,7 +252,7 @@ void FSearcher::SetInput(const FString& NewInput)
 	int32 Id;
 	{
 		FScopeLock ScopeLock(&InputOperationSection);
-		Result = FInputResult(RequestCounter.GetValue(), NewInput, ChunkSize , ChunkSize);
+		Result = FInputResult(RequestCounter.GetValue(), NewInput, ChunkSize, ChunkSize);
 		IsEmptyInput = Result.IsFinishedProcess;
 		Id = Result.Id;
 	}
@@ -273,7 +268,6 @@ void FSearcher::SetInput(const FString& NewInput)
 
 void FSearcher::FindMoreDataResult()
 {
-	//todo we cannot update version because we move input string and delete it
 	{
 		FScopeLock ScopeLock(&InputOperationSection);
 		ensureAlways(Result.Id == RequestCounter.GetValue());

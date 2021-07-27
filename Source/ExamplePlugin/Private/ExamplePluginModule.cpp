@@ -2,27 +2,11 @@
 
 #include "ExamplePluginModule.h"
 
-#include "Multithreading/ExampleAsyncTask.h"
 #include "UI/ExamplePluginStyle.h"
 #include "ExamplePluginCommands.h"
 #include "LevelEditor.h"
-#include "Widgets/Layout/SScrollBox.h"
-#include "ToolMenus.h"
-#include "Widgets/Input/SSearchBox.h"
-#include "Widgets/Input/STextEntryPopup.h"
-#include "Widgets/Text/SInlineEditableTextBlock.h"
-#include "FeedbackContextEditor.h"
-#include "Toolkits/GlobalEditorCommonCommands.h"
-#include "ScopedSourceControlProgress.h"
-#include "Dialogs/SBuildProgress.h"
-#include "Interfaces/IMainFrameModule.h"
-#include "ScopedLocalizationServiceProgress.h"
-#include "FeedbackContextEditor.h"
-#include "Multithreading/CallbackHandler.h"
-#include "UI/SearchEverywhereWidget.h"
 #include "UI/SearchEverywhereWindow.h"
 #include "Multithreading/Searcher.h"
-#include "Dictionary/Dictionary.h"
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"

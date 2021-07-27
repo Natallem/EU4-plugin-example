@@ -2,30 +2,40 @@
 
 #include "Multithreading/SearchTask.h"
 #include "Misc/FileHelper.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 
 FDictionary::FDictionary()
 {
-	GetTxtData(Path);
+	GetTxtData(DictionaryPath);
 }
 
-void FDictionary::GetTxtData(FString path)
+void FDictionary::GetTxtData(const FString& Path)
 {
-	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*path))
+	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*Path))
 	{
-		FString str = path + "File does not exist!";
-		UE_LOG(LogTemp, Warning, TEXT("%s, file does not exist!"), *str);
+		UE_LOG(LogTemp, Warning, TEXT("File for dictionary not found : '%s'"), *Path);
 		return;
 	}
-	FFileHelper::LoadANSITextFileToStrings(*path, NULL, DictionaryStringArray);
+	FFileHelper::LoadANSITextFileToStrings(*Path, NULL, DictionaryStringArray);
 }
 
-TOptional<FString> FDictionary::FindNextWord(FSearchTask& Task,  const FThreadSafeCounter& RequestCounter)
+TArray<int> FDictionary::CreatePArray(const FString& Pattern)
+{
+	TArray<int> Result;
+	Result.Init(-1, Pattern.Len());
+	for (int r = 1, l = -1; r < Pattern.Len(); r++)
+	{
+		while (l != -1 && Pattern[l + 1] != Pattern[r])
+			l = Result[l];
+		if (Pattern[l + 1] == Pattern[r])
+			Result[r] = ++l;
+	}
+	return Result;
+}
+
+TOptional<FString> FDictionary::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
-	UE_LOG(LogTemp, Log, TEXT("EP : FDictionary index=%d input=%s"), Task.NextIndexToCheck, &Task.Request);
 	for (int i = Task.NextIndexToCheck; i < DictionaryStringArray.Num(); ++i)
 	{
 		++IterationCounter;
@@ -33,8 +43,6 @@ TOptional<FString> FDictionary::FindNextWord(FSearchTask& Task,  const FThreadSa
 		{
 			if (RequestCounter.GetValue() != Task.TaskId)
 			{
-				UE_LOG(LogTemp, Log, TEXT("EP : FDictionary id changed"));
-
 				return TOptional<FString>();
 			}
 			IterationCounter = 0;
@@ -67,18 +75,4 @@ bool FDictionary::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, 
 		}
 	}
 	return false;
-}
-
-TArray<int> FDictionary::CreatePArray(const FString& pattern)
-{
-	TArray<int> Result;
-	Result.Init(-1, pattern.Len());
-	for (int r = 1, l = -1; r < pattern.Len(); r++)
-	{
-		while (l != -1 && pattern[l + 1] != pattern[r])
-			l = Result[l];
-		if (pattern[l + 1] == pattern[r])
-			Result[r] = ++l;
-	}
-	return Result;
 }
