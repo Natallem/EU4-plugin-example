@@ -10,14 +10,9 @@ FCallbackHandler::FCallbackHandler(TWeakPtr<SSearchEverywhereWindow>& WindowToPa
 {
 	MessageEndpoint = FMessageEndpoint::Builder(TEXT("LiveLinkMessageBusSource"))
 	                  .Handling<FWordsFound>(this, &FCallbackHandler::HandleFoundWords)
-	                  // .ReceivingOnThread(ENamedThreads::AnyThread)
 	;
-
-	// .ReceivingOnAnyThread();
 	uint32 ThreadId = FPlatformTLS::GetCurrentThreadId();
 	FString ThreadName = FThreadManager::Get().GetThreadName(ThreadId);
-	// FThreadManager::Get().
-	// MessageEndpoint->SetRecipientThread(ENamedThreads::);
 }
 
 TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> FCallbackHandler::GetMessageEndpoint() const
@@ -34,35 +29,3 @@ void FCallbackHandler::HandleFoundWords(const FWordsFound& Message,
 		Window->UpdateShownResults();
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

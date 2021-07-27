@@ -1,4 +1,5 @@
 #pragma once
+#include "Multithreading/SearchTask.h"
 // #include "Multithreading/Searcher.h"
 
 class FDictionary
@@ -6,8 +7,9 @@ class FDictionary
 public:
 	FDictionary();
 	void GetTxtData(FString path);
-	TOptional<FString> FindNextWord(class FTask& Task, const FThreadSafeCounter& RequestCounter);
-
+	TOptional<FString> FindNextWord(FSearchTask& Task, 
+	                                const FThreadSafeCounter& RequestCounter);
+	
 	static TArray<int> CreatePArray(const FString& pattern);
 	static bool IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern, const TArray<int> &PArray);
 private:

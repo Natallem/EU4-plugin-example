@@ -1,15 +1,12 @@
 #include "SearchEverywhereWidget.h"
 
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Input/STextEntryPopup.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SScrollBorder.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "STextPropertyEditableTextBox.h"
+#include "Components/SlateWrapperTypes.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "EditorStyleSet.h"
 #include "Multithreading/Searcher.h"
@@ -19,7 +16,7 @@
 void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSearcher> SearcherArgument)
 {
 	Searcher = SearcherArgument;
-	int ElementNumber = 30;
+	/*int ElementNumber = 30;
 	StringItems.Reserve(ElementNumber);
 	for (int i = 0; i < ElementNumber; i++)
 	{
@@ -27,7 +24,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 		str.AppendInt(i);
 		str.AppendChar('\n');
 		StringItems.Add(MakeShared<FString>(str));
-	}
+	}*/
 	ListView = SNew(SListViewWidget)
 		.IsFocusable(true)
 		.ItemHeight(64)
@@ -44,6 +41,10 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 				ListView.ToSharedRef()
 			]
 		];
+	SAssignNew(ShowMoreResultsButton, SButton)
+			.Text(LOCTEXT("ShowMoreResultsButtonText", "More ..."))
+			.Visibility(EVisibility::Visible)
+			.OnClicked(this, &SSearchEverywhereWidget::OnButtonShowMoreResultsClicked);
 
 	const TSharedRef<SWidget> TabsWidget = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -75,11 +76,11 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 	const TSharedRef<SWidget> SearchTableWidget =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
-		.Padding(10.0f)
-		.FillWidth(1.0f)
+		  .Padding(10.0f)
+		  .FillWidth(1.0f)
 		[
 			SAssignNew(EditableTextBox, SEditableText)
-			.Text(LOCTEXT("DisabledContextMenuInput", "Type here to search ... "))
+			// .Text(LOCTEXT("DisabledContextMenuInput", "Type here to search ... "))
 			.RevertTextOnEscape(true)
 			.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
 		];
@@ -94,8 +95,8 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 			[
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
-				.HAlign(HAlign_Left)
-				.AutoHeight()
+				  .HAlign(HAlign_Left)
+				  .AutoHeight()
 				[
 					TabsWidget
 				]
@@ -105,8 +106,8 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 					SearchTableWidget
 				]
 				+ SVerticalBox::Slot()
-				.FillHeight(1.0f)
-				.Padding(0)
+				  .FillHeight(1.0f)
+				  .Padding(0)
 				[
 					ListTableWidget
 				]
@@ -117,15 +118,24 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 
 void SSearchEverywhereWidget::UpdateShownResults()
 {
-	TArray<FString> array = Searcher->GetRequestData();
+	TPair<bool, TArray<FString>> Result = Searcher->GetRequestData();
 	if (ShouldCleanList)
 	{
 		ShouldCleanList = false;
-		StringItems.Empty();
+		StringItems.Reset();
 	}
-	for (FString & Str : array)
+	
+	if (StringItems.Num() > 0 && !StringItems.Last()->IsSet())
 	{
-		StringItems.Add(MakeShared<FString>(Str));
+		StringItems.Pop(false);
+	}
+	for (FString& Str : Result.Value)
+	{
+		StringItems.Add(MakeShared<TOptional<FString>>(Str));
+	}
+	if (!Result.Key)
+	{
+		StringItems.Add(MakeShared<TOptional<FString>>());
 	}
 	ListView->RebuildList();
 }
@@ -139,6 +149,16 @@ void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 {
 	ShouldCleanList = true; //todo maybe just clean?
 	Searcher->SetInput(Filter.ToString());
+}
+
+FReply SSearchEverywhereWidget::OnButtonShowMoreResultsClicked() const
+{
+	if (ShowMoreResultsButton->GetVisibility() == EVisibility::Visible)
+	{
+		Searcher->FindMoreDataResult();
+		return FReply::Handled();
+	}
+	return FReply::Handled(); // todo or unhandled?
 }
 
 void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
@@ -168,13 +188,18 @@ void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
+	TSharedPtr<SWidget> InnerWidget = ShowMoreResultsButton;
+	if (InItem->IsSet())
+	{
+		InnerWidget = SNew(STextBlock)
+			.Text(FText::FromString(*InItem->GetValue()));
+	}
 	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString(*InItem))
+			InnerWidget.ToSharedRef()
 		]
 	];
 }
@@ -186,7 +211,7 @@ FReply SSearchEverywhereWidget::OnButtonClicked()
 	FString str("String number ");
 	str.AppendInt(i++);
 	str.AppendChar('\n');
-	StringItems.Add(MakeShared<FString>(str));
+	// StringItems.Add(MakeShared<FString>(str));
 	ListView->RebuildList();
 	return FReply::Handled();
 }

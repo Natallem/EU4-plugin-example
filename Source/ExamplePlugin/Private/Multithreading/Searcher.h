@@ -9,7 +9,7 @@ private:
 	struct FHeartbeatRecipient
 	{
 		FHeartbeatRecipient(const TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
-			const FMessageAddress& ConnectionAddress)
+		                    const FMessageAddress& ConnectionAddress)
 			: MessageEndpoint(MessageEndpoint),
 			  ConnectionAddress(ConnectionAddress)
 		{
@@ -20,21 +20,23 @@ private:
 	};
 
 public:
-	// DECLARE_DELEGATE(FDataPortionFoundDelegate);
-	explicit FSearcher(int ChunkSize, 	                   const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint, const FMessageAddress& RecipientAddress);
+	explicit FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint,
+	                   const FMessageAddress& RecipientAddress);
 
 	virtual ~FSearcher() override = default;
 	void EnsureCompletion();
 
 	virtual bool Init() override;
+	bool ExecuteFindResultTask(FSearchTask& Task);
+	bool FillBuffer(FSearchTask& Task);
+
 	virtual uint32 Run() override;
 	virtual void Stop() override;
 
-	TArray<FString> GetRequestData();
+	TPair<bool, TArray<FString>> GetRequestData();
 	void SetInput(const FString& NewInput);
 	void FindMoreDataResult();
-	
-	// FDataPortionFoundDelegate& OnNewDataFound();
+	void NotifyMainThread();
 
 private:
 	uint32 ChunkSize;
@@ -43,18 +45,13 @@ private:
 	TUniquePtr<FRunnableThread> Thread;
 	FEventRef WakeUpWorkerEvent;
 	FThreadSafeBool m_Kill = false;
-	// FDataPortionFoundDelegate DataPortionFoundDelegate;
 	FCriticalSection InputOperationSection;
 	FInputResult Result;
 	FDictionary Dictionary;
 	FHeartbeatRecipient Recipient;
+	bool IsNotifiedMainThread = false; // todo maybe threadsafe? No need because call under lock
 
-	bool IsNotifiedMainThread = false; // todo maybe threadsafe?
-
-	void NotifyMainThread();
-	inline bool ReturnBoolFunc();
-	bool SaveTaskStateToResult(FTask& Task);
+	bool SaveTaskStateToResult(FSearchTask& Task);
 	bool AddFoundWordToResult(FString&& Word, int32 TaskId);
 	bool AllWordsFound(int32 InputId);
-
 };
