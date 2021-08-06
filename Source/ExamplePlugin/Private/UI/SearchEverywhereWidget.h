@@ -12,7 +12,6 @@ public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWidget)
 		{
 		}
-
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, TSharedRef<class FSearcher> Searcher);
@@ -24,7 +23,11 @@ protected:
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 
+	FReply OpenSettings(FName ContainerName, FName CategoryName, FName SectionName);
+
 private:
+	void ProcessIDetailTreeNode(const TSharedRef<IDetailTreeNode>& Node);
+
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
 	                                                        const TSharedRef<STableViewBase>& OwnerTable);
 	void OnTextChanged(const FText& Filter);
