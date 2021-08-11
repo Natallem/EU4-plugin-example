@@ -1,19 +1,22 @@
 #include "SearchEverywhereWidget.h"
 
-#include "Widgets/Input/SSearchBox.h"
-#include "Widgets/Input/STextEntryPopup.h"
-#include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/Layout/SScrollBorder.h"
-#include "STextPropertyEditableTextBox.h"
 #include "EditorStyleSet.h"
 #include "IDetailTreeNode.h"
 #include "IPropertyRowGenerator.h"
 #include "ISettingsCategory.h"
 #include "ISettingsContainer.h"
-#include "Multithreading/Searcher.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
-
+#include "PropertyPath.h"
+#include "STextPropertyEditableTextBox.h"
+#include "Misc/FileHelper.h"
+#include "Multithreading/Searcher.h"
+#include "Widgets/Layout/SScrollBorder.h"
+#include "Widgets/Layout/SScrollBox.h"
+// #include "SourceCodeAccess/Private/SourceCodeAccessSettings.h"
+#include "Classes/EditorStyleSettings.h"
+#include "PropertyEditor/Private/DetailItemNode.h"
+#include "PropertyEditor/Private/SDetailsView.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
@@ -27,7 +30,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 		.ListItemsSource(&StringItems)
 		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget);
 
-	const TSharedRef<SWidget> ListTableWidget = SNew(SVerticalBox)
+	ListTableWidget = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		[
@@ -50,21 +53,23 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 			.Text(LOCTEXT("Button1Text", "Button1"))
 			// .OnClicked(FOnClicked::CreateStatic(&SSearchEverywhereWidget::OpenSettings, FName("Editor"),
 			                                    // FName("General"), FName("Appearance")))
-			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
-			           FName("Appearance"))
-
+			.OnClicked(this, &SSearchEverywhereWidget::FirstAttemptToGetAllProperties)
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
 			SNew(SButton)
 			.Text(LOCTEXT("Button2Text", "Button2"))
+			.OnClicked(this, &SSearchEverywhereWidget::SecondAttemptToGetAllProperties)
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
 			SNew(SButton)
 			.Text(LOCTEXT("Button3Text", "Button3"))
+			.OnClicked(this, &SSearchEverywhereWidget::ThirdAttemptToGetAllProperties)
+			// .OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
+			// FName("Appearance"))
 		]
 
 
@@ -112,7 +117,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 				  .FillHeight(1.0f)
 				  .Padding(0)
 				[
-					ListTableWidget
+					ListTableWidget.ToSharedRef()
 				]
 			]
 		]
@@ -177,117 +182,6 @@ FReply SSearchEverywhereWidget::OnFocusReceived(const FGeometry& MyGeometry, con
 }
 
 
-FReply SSearchEverywhereWidget::OpenSettings(FName ContainerName, FName CategoryName, FName SectionName)
-{
-	TArray<FName> OutNames;
-	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
-	SettingsModule.GetContainerNames(OutNames);
-	TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
-	TArray<TSharedPtr<ISettingsCategory>> EditorSettingContainerCategories;
-	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
-	for (TSharedPtr<ISettingsCategory> Category : EditorSettingContainerCategories)
-	{
-		const FName& CategoryName = Category->GetName();
-
-		const FText& CategoryDescription = Category->GetDescription();
-		TArray<TSharedPtr<ISettingsSection>> Sections;
-		Category->GetSections(Sections);
-		const FText& CategoryDisplayName = Category->GetDisplayName();
-
-		for (TSharedPtr<ISettingsSection> Section : Sections)
-		{
-			const FName& SectionName = Section->GetName();
-			const FText& SectionDisplayName = Section->GetDisplayName();
-			const FText& SectionDescription = Section->GetDescription();
-
-			FText SectionStatus = Section->GetStatus();
-			const FName& SectionCategoryName = Section->GetCategory().Pin()->GetName();
-			TWeakObjectPtr<UObject> SectionObject = Section->GetSettingsObject();
-			UObject* t = SectionObject.Get();
-			FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(
-				"PropertyEditor");
-			FPropertyRowGeneratorArgs Args;
-			Args.bAllowMultipleTopLevelObjects = true;
-			TSharedPtr<IPropertyRowGenerator> Generator = PropertyEditorModule.CreatePropertyRowGenerator(Args);
-			TArray<UObject*> Objects;
-			Objects.Add(t);
-			Generator->SetObjects(Objects);
-			const TArray<TSharedRef<IDetailTreeNode>>& DetailTreeNodes = Generator->GetRootTreeNodes();
-			UE_LOG(LogTemp, Log, TEXT("EP : Category '%s' section '%s'"), *CategoryDisplayName.ToString(),
-            			*SectionDisplayName.ToString());
-			for (const TSharedRef<IDetailTreeNode>& Ref : DetailTreeNodes)
-			{
-				ProcessIDetailTreeNode(Ref);
-			}
-			
-		}
-	}
-	SettingsModule.ShowViewer(ContainerName, CategoryName, SectionName);
-	return FReply::Handled();
-}
-
-void SSearchEverywhereWidget::ProcessIDetailTreeNode(const TSharedRef<IDetailTreeNode>& Node)
-{
-	TSharedPtr<IPropertyHandle> Handle = Node->CreatePropertyHandle();
-	EDetailNodeType type = Node->GetNodeType();
-	if (Handle == nullptr && type != EDetailNodeType::Advanced && type != EDetailNodeType::Category)
-	{
-		TSharedPtr<IPropertyHandle> Handle2 = Node->CreatePropertyHandle();
-		int x = 10;
-	}
-
-
-	TArray<TSharedRef<IDetailTreeNode>> Childrens;
-
-	switch (type)
-	{
-	case EDetailNodeType::Category:
-		{
-			Node->GetChildren(Childrens);
-			for (TSharedRef<IDetailTreeNode> Child : Childrens)
-			{
-				ProcessIDetailTreeNode(Child);
-			}
-			FText Name;
-			 FName NameCategory;
-			FName NameNode = Node->GetNodeName();
-			if (Handle)
-			{
-				NameCategory = Handle->GetDefaultCategoryName();
-				Name = Handle->GetPropertyDisplayName();
-			}
-			UE_LOG(LogTemp, Log, TEXT("EP : Category Name '%s', number children = %d"), *Name.ToString(), Childrens.Num());
-			int x = 10;
-
-			break;
-		}
-	case EDetailNodeType::Item:
-		{
-			FText Name;
-			if (Handle)
-			{
-				Name = Handle->GetPropertyDisplayName();
-			}
-			Node->GetChildren(Childrens);
-			UE_LOG(LogTemp, Log, TEXT("EP : Item Name '%s', number children = %d"), *Name.ToString(), Childrens.Num());
-			int x = 10;
-
-			break;
-		}
-	case EDetailNodeType::Advanced:
-		{
-			int x = 10;
-			break;
-		}
-	case EDetailNodeType::Object:
-		{
-			int x = 10;
-			break;
-		}
-	}
-}
-
-
 void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
                                               const FWidgetPath& NewWidgetPath)
 {
@@ -314,6 +208,327 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 			InnerWidget.ToSharedRef()
 		]
 	];
+}
+
+FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCategoryName, FName InSectionName)
+{
+	SettingsModule.ShowViewer(InContainerName, InCategoryName, InSectionName);
+	return FReply::Handled();
+}
+
+void SSearchEverywhereWidget::WriteLog(const FString& Text, int LogNumber, bool IsAppend)
+{
+	FString FileLog =
+		TEXT(R"(C:\Projects\UnrealEngineProjects\ExampleProject\ExampleProject\Plugins\ExamplePlugin\Resources\Log_)") +
+		FString::FromInt(LogNumber) + ".txt";
+	FFileHelper::SaveStringToFile(Text, *FileLog, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
+}
+
+FReply SSearchEverywhereWidget::FirstAttemptToGetAllProperties()
+{
+	WriteLog("FirstAttemptToGetAllProperties\n", 1, false);
+	TArray<FName> OutNames;
+	SettingsModule.GetContainerNames(OutNames);
+	TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
+	TArray<TSharedPtr<ISettingsCategory>> EditorSettingContainerCategories;
+	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(
+		"PropertyEditor");
+	FPropertyRowGeneratorArgs Args;
+	Args.bAllowMultipleTopLevelObjects = true;
+	Args.bShouldShowHiddenProperties = true;
+
+	for (const TSharedPtr<ISettingsCategory>& Category : EditorSettingContainerCategories)
+	{
+		FName CategoryName = Category->GetName();
+		const FText& CategoryDescription = Category->GetDescription();
+		const FText& CategoryDisplayName = Category->GetDisplayName();
+		WriteLog(FString::Printf(
+			         TEXT("CategoryName: '%s', CategoryDisplayName: '%s', CategoryDescription: '%s'\n"),
+			         *CategoryName.ToString(),
+			         *CategoryDisplayName.ToString(), *CategoryDescription.ToString()), 1);
+
+		TArray<TSharedPtr<ISettingsSection>> Sections;
+		Category->GetSections(Sections);
+
+		for (const TSharedPtr<ISettingsSection>& Section : Sections)
+		{
+			const FName& SectionName = Section->GetName();
+			const FText& SectionDisplayName = Section->GetDisplayName();
+			const FText& SectionDescription = Section->GetDescription();
+			WriteLog(FString::Printf(
+				         TEXT("	SectionName: '%s', SectionDisplayName: '%s', SectionDescription: '%s'\n"),
+				         *SectionName.ToString(),
+				         *SectionDisplayName.ToString(), *SectionDescription.ToString()), 1);
+
+			FText SectionStatus = Section->GetStatus();
+			const FName& SectionCategoryName = Section->GetCategory().Pin()->GetName();
+			TWeakObjectPtr<UObject> SectionObject = Section->GetSettingsObject();
+
+			TSharedPtr<IPropertyRowGenerator> Generator = PropertyEditorModule.CreatePropertyRowGenerator(Args);
+			TArray<UObject*> Objects;
+			UObject* obj = SectionObject.Get();
+			Objects.Add(SectionObject.Get());
+			Generator->SetObjects(Objects);
+			TArray<TSharedRef<IDetailTreeNode>> DetailTreeNodes = Generator->GetRootTreeNodes();
+			for (TSharedRef<IDetailTreeNode>& Ref : DetailTreeNodes)
+			{
+				ProcessIDetailTreeNode(Ref, "		");
+			}
+		}
+	}
+	return FReply::Handled();
+}
+
+void SSearchEverywhereWidget::ProcessIDetailTreeNode(TSharedRef<IDetailTreeNode>& Node, const FString& Tabs)
+{
+	TSharedPtr<IPropertyHandle> Handle = Node->CreatePropertyHandle();
+	const EDetailNodeType Type = Node->GetNodeType();
+	FName NameNode = Node->GetNodeName();
+	static TMap<EDetailNodeType, FString> TypeMap =
+	{
+		{EDetailNodeType::Item, "Item"},
+		{EDetailNodeType::Advanced, "Advanced"},
+		{EDetailNodeType::Category, "Category"},
+		{EDetailNodeType::Object, "Object"},
+	};
+	WriteLog(Tabs + "Node type: \'" + TypeMap[Type] + "\', has " + (Handle ? "" : "no ") + "Handle", 1);
+
+	TArray<TSharedRef<IDetailTreeNode>> Childrens;
+
+	switch (Type)
+	{
+	case EDetailNodeType::Category:
+		{
+			Node->GetChildren(Childrens);
+			FText PropertyDisplayName;
+			FName DefaultCategoryName;
+			const FName NodeName = Node->GetNodeName();
+			if (Handle)
+			{
+				DefaultCategoryName = Handle->GetDefaultCategoryName();
+				PropertyDisplayName = Handle->GetPropertyDisplayName();
+			}
+			WriteLog(", children count = " + FString::FromInt(Childrens.Num()), 1);
+			if (!PropertyDisplayName.IsEmpty())
+			{
+				WriteLog(", PropertyDisplayName: \'" + PropertyDisplayName.ToString() + '\'', 1);
+			}
+			if (!DefaultCategoryName.IsNone())
+			{
+				WriteLog(", DefaultCategoryName: \'" + DefaultCategoryName.ToString() + '\'', 1);
+			}
+			if (!NodeName.IsNone())
+			{
+				if (NodeName == "Accessor")
+				{
+					ListTableWidget = Childrens[0]->CreateNodeWidgets().WholeRowWidget;
+					// UObject* obj = Childrens[0];
+					TSharedPtr<IDetailPropertyRow> t = Childrens[0]->GetRow();
+					FName T2 = Childrens[0]->GetNodeName();
+					// WriteLog(", NameNode: \'" + NodeName.ToString() + '\'');
+					// break;
+				}
+				WriteLog(", NameNode: \'" + NodeName.ToString() + '\'', 1);
+			}
+			if (Childrens.Num() != 0)
+			{
+				WriteLog("\n", 1);
+				for (TSharedRef<IDetailTreeNode> Child : Childrens)
+				{
+					ProcessIDetailTreeNode(Child, Tabs + "	");
+				}
+			}
+			break;
+		}
+	case EDetailNodeType::Item:
+		{
+			FText PropertyDisplayName;
+
+			if (Handle)
+			{
+				PropertyDisplayName = Handle->GetPropertyDisplayName();
+			}
+			Node->GetChildren(Childrens);
+			WriteLog(FString::Printf(
+				         TEXT(", PropertyDisplayName: '%s', children count = %d"), *PropertyDisplayName.ToString(),
+				         Childrens.Num()), 1);
+			if (Childrens.Num() == 0 && PropertyDisplayName.IsEmpty())
+			{
+				WriteLog(FString::Printf(TEXT(" Hidden")), 1);
+			}
+			if (Childrens.Num() != 0)
+			{
+				WriteLog("\n", 1);
+				for (TSharedRef<IDetailTreeNode> Child : Childrens)
+				{
+					ProcessIDetailTreeNode(Child, Tabs + "	");
+				}
+			}
+
+			if (PropertyDisplayName.IsEmpty() && Childrens.Num() == 0 && Handle == nullptr)
+			{
+				TSharedRef<FDetailItemNode> ItemNode = StaticCastSharedRef<FDetailItemNode>(Node);
+				// Handle = NodeRow->GetPropertyHandle();
+				int x = 10;
+			}
+			break;
+		}
+	case EDetailNodeType::Advanced:
+		{
+			int x = 10;
+			break;
+		}
+	case EDetailNodeType::Object:
+		{
+			int x = 10;
+			break;
+		}
+	}
+	WriteLog("\n", 1);
+}
+
+FReply SSearchEverywhereWidget::SecondAttemptToGetAllProperties()
+{
+	FDetailsViewArgs DetailsViewArgs;
+	DetailsViewArgs.bShowDifferingPropertiesOption = true;
+	DetailsViewArgs.bShowModifiedPropertiesOption = true;
+	DetailsViewArgs.bForceHiddenPropertyVisibility = true;
+	DetailsViewArgs.bShowCustomFilterOption = true;
+
+	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	TSharedRef<SDetailsView> DetailsView = StaticCastSharedRef<SDetailsView>(
+		EditModule.CreateDetailView(DetailsViewArgs));
+	FDetailsViewArgs args;
+	DetailsView->SetIsPropertyEditingEnabledDelegate(FIsPropertyEditingEnabled::CreateStatic([] { return false; }));
+	DetailsView->ShowAllAdvancedProperties();
+	DetailsView->SetOnDisplayedPropertiesChanged(
+		::FOnDisplayedPropertiesChanged::CreateRaw(this, &SSearchEverywhereWidget::HandlePropertiesChanged));
+
+	WriteLog("SecondAttemptToGetAllProperties\n", 2, false);
+
+	TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
+	TArray<TSharedPtr<ISettingsCategory>> EditorSettingContainerCategories;
+	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
+	for (const TSharedPtr<ISettingsCategory>& Category : EditorSettingContainerCategories)
+	{
+		FName CategoryName = Category->GetName();
+		const FText& CategoryDescription = Category->GetDescription();
+		const FText& CategoryDisplayName = Category->GetDisplayName();
+		WriteLog(FString::Printf(
+			         TEXT("CategoryName: '%s', CategoryDisplayName: '%s', CategoryDescription: '%s'\n"),
+			         *CategoryName.ToString(),
+			         *CategoryDisplayName.ToString(), *CategoryDescription.ToString()), 2);
+
+		TArray<TSharedPtr<ISettingsSection>> Sections;
+		Category->GetSections(Sections);
+		for (const TSharedPtr<ISettingsSection>& Section : Sections)
+		{
+			const FName& SectionName = Section->GetName();
+			const FText& SectionDisplayName = Section->GetDisplayName();
+			const FText& SectionDescription = Section->GetDescription();
+			WriteLog(FString::Printf(
+				         TEXT("	SectionName: '%s', SectionDisplayName: '%s', SectionDescription: '%s'\n"),
+				         *SectionName.ToString(),
+				         *SectionDisplayName.ToString(), *SectionDescription.ToString()), 2);
+			if (SectionName.ToString() == "Source Code")
+			{
+				TWeakPtr<SWidget> ptr = Section->GetCustomWidget();
+				ListTableWidget = Section->GetCustomWidget().Pin();
+			}
+			FText PropertyDisplayName;
+			TSet<FString> PropValues;
+			TSet<FString> PathValues;
+			TMap<FString, FProperty*> PropertyMap;
+
+			UObject* SectionObject = Section->GetSettingsObject().Get();
+			FString SectionObjectName = SectionObject->GetName();
+
+			WriteLog(FString::Printf(TEXT("		SectionObjectName: '%s'\n"), *SectionObjectName), 2);
+			for (TFieldIterator<FProperty> PropertyIt(SectionObject->GetClass()); PropertyIt; ++PropertyIt)
+			{
+				// if (!PropertyIt->HasMetaData(TEXT("config")))
+				// {
+					// continue;
+				// }
+				FString CppName = PropertyIt->GetNameCPP();
+				PropValues.Add(CppName);
+				PropertyMap.FindOrAdd(CppName) = *PropertyIt;
+			}
+			DetailsView->SetObject(SectionObject);
+			TArray<FPropertyPath> paths = DetailsView->GetPropertiesInOrderDisplayed();
+			for (FPropertyPath& path : paths)
+			{
+				PathValues.Add(path.ToString());
+				// WriteLog(FString::Printf(TEXT("		Path: '%s'\n"), *path.ToString()), 2);
+			}
+			TSet<FString> Intersection = PropValues.Intersect(PathValues);
+			TMap<FString, TArray<FProperty*>> CategoryPropertyMap;
+			for (FString& PropertyName : Intersection)
+			{
+				const FString& CategoryPropertyName = PropertyMap[PropertyName]->GetMetaData(TEXT("Category"));
+				CategoryPropertyMap.FindOrAdd(CategoryPropertyName).Add(PropertyMap[PropertyName]);
+			}
+			for (const TPair<FString, TArray<FProperty*>>& Pair : CategoryPropertyMap)
+			{
+				WriteLog(FString::Printf(TEXT("		CategoryPropertyName: '%s'\n"), *Pair.Key), 2);
+				for (FProperty* Property : Pair.Value)
+				{
+					WriteLog(FString::Printf(
+						         TEXT("			Both: '%s', Display name: '%s'\n"), *Property->GetNameCPP(),
+						         *Property->GetDisplayNameText().ToString()), 2);
+				}
+			}
+			
+			TSet<FString> InPropNotInPath = PropValues.Difference(PathValues);
+			TSet<FString> InPathNotInProp = PathValues.Difference(PropValues);
+			if (InPathNotInProp.Num() != 0)
+			{
+				WriteLog(FString::Printf(
+					         TEXT("		Difference: in Paths, not in Properties(Category: '%s', Section: '%s'):\n"),
+					         *CategoryDisplayName.ToString(), *SectionDisplayName.ToString()), 2);
+				for (FString& Diff : InPathNotInProp)
+				{
+					WriteLog("			\'" + Diff + "\'\n", 2);
+				}
+			}
+			if (InPropNotInPath.Num() != 0)
+			{
+				WriteLog(FString::Printf(
+					         TEXT("		Difference: in Properties, not in Paths(Category: '%s', Section: '%s'):\n"),
+					         *CategoryDisplayName.ToString(), *SectionDisplayName.ToString()), 2);
+				for (FString& Diff : InPropNotInPath)
+				{
+					FString CategoryPropertyName = PropertyMap[Diff]->GetMetaData(TEXT("Category"));
+
+					WriteLog(FString::Printf(
+						         TEXT("				'%s', Display name: '%s', PropertyCategory: '%s'\n"), *Diff,
+						         *PropertyMap[Diff]->GetDisplayNameText().ToString(), *CategoryPropertyName), 2);
+				}
+			}
+		}
+	}
+
+	return FReply::Handled();
+}
+
+FReply SSearchEverywhereWidget::ThirdAttemptToGetAllProperties()
+{
+	for (TObjectIterator<UClass> It; It; ++It)
+	{
+		UClass* UClassPtr = *It;
+		for (TFieldIterator<FProperty> Prop(UClassPtr); Prop; ++Prop)
+		{
+			WriteLog(Prop->GetNameCPP() + "\n", 3);
+			Prop->GetMetaDataMap();
+		}
+	}
+	return FReply::Handled();
+}
+
+void SSearchEverywhereWidget::HandlePropertiesChanged()
+{
 }
 
 
