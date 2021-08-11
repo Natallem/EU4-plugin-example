@@ -27,13 +27,7 @@ protected:
 
 private:
 	// USourceCodeAccessSettings * USourceCodeAccessSettingsPtr;
-	FReply FirstAttemptToGetAllProperties();
-	FReply SecondAttemptToGetAllProperties();
-	FReply ThirdAttemptToGetAllProperties();
-
-	void HandlePropertiesChanged();
-	void WriteLog(const FString& Text, int LogNumber, bool IsAppend = true);
-	void ProcessIDetailTreeNode(TSharedRef<IDetailTreeNode>& Node, const FString& Tabs = "");
+	FReply GetAllProperties();
 
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
 	                                                        const TSharedRef<STableViewBase>& OwnerTable);

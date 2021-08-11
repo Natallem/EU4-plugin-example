@@ -5,6 +5,7 @@
 #include "UI/ExamplePluginStyle.h"
 #include "ExamplePluginCommands.h"
 #include "LevelEditor.h"
+#include "Dictionary/PropertyHolder.h"
 #include "UI/SearchEverywhereWindow.h"
 #include "Multithreading/Searcher.h"
 static const FName ExamplePluginTabName("ExamplePlugin");
@@ -29,6 +30,7 @@ void FExamplePluginModule::StartupModule()
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
+	FPropertyHolder::LogAllProperties();
 	//todo add to asset editor
 	// Searcher->OnNewDataFound().BindThreadSafeSP(CallbackHandler, &FCallbackHandler::OnCallback); //todo maybe bind static
 }
