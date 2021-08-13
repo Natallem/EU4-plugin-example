@@ -6,7 +6,8 @@ public class ExamplePlugin : ModuleRules
 {
 	public ExamplePlugin(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		PCHUsage = PCHUsageMode.NoPCHs;
+		bUseUnity = false;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
