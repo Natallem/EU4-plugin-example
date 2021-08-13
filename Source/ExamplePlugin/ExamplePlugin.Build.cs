@@ -28,7 +28,6 @@ public class ExamplePlugin : ModuleRules
 				"Core",
 				"UnrealEd",
 				"SourceControl",
-				"LocalizationService",
 				"EditorWidgets",
 				"EditorStyle"
 				// ... add other public dependencies that you statically link with here ...
@@ -47,8 +46,7 @@ public class ExamplePlugin : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"MainFrame", "LocalizationService",
-				"GraphEditor",
+				"MainFrame",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
