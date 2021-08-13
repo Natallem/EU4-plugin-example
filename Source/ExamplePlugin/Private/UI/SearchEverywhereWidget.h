@@ -1,11 +1,12 @@
 #pragma once
 #include "Widgets/Input/SButton.h"
-
+#include "Multithreading/Configuration.h"
+#include "SettingsData/PropertyHolder.h"
 
 class SSearchEverywhereWidget final : public SCompoundWidget
 {
 private:
-	typedef TSharedPtr<TOptional<FString>> FListItemPtr;
+	typedef TSharedPtr<TOptional<RequiredType>> FListItemPtr;
 	typedef SListView<FListItemPtr> SListViewWidget;
 
 public:
@@ -43,4 +44,5 @@ private:
 	TSharedPtr<FSearcher> Searcher;
 	TSharedPtr<SWidget> ListTableWidget;
 	bool ShouldCleanList = false;
+	FPropertyHolder& PropertyHolder = FPropertyHolder::Get();
 };

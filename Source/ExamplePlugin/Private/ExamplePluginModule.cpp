@@ -5,7 +5,7 @@
 #include "UI/ExamplePluginStyle.h"
 #include "ExamplePluginCommands.h"
 #include "LevelEditor.h"
-#include "Dictionary/PropertyHolder.h"
+#include "SettingsData/PropertyHolder.h"
 #include "UI/SearchEverywhereWindow.h"
 #include "Multithreading/Searcher.h"
 static const FName ExamplePluginTabName("ExamplePlugin");

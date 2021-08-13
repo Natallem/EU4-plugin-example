@@ -26,7 +26,7 @@ FText FCategoryDetail::GetDisplayName()
 void FCategoryDetail::CreateRowWidget()
 {
 	SAssignNew(RowWidget, SButton)
-		.Text(GetDisplayName().ToString())
+		.Text(GetDisplayName())
 		.OnClicked_Lambda([this]()
 	                              {
 		                              SettingsModule.ShowViewer(FName("Editor"), FName(GetDisplayName().ToString()),

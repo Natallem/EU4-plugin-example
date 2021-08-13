@@ -1,31 +1,34 @@
 #pragma once
 
-#include "ISettingsCategory.h"
-#include "ISettingsSection.h"
-
+#include "Multithreading/Configuration.h"
 class ISettingDetail;
 class ISettingsModule;
+
+template <typename Type>
+class TSearchTask;
 
 class FPropertyHolder
 {
 public:
-	using ISettingDetailRef = TSharedRef<ISettingDetail>;
+	using FSearchTask = TSearchTask<RequiredType>;
 	
-	FPropertyHolder();
 	static TArray<int> CreatePArray(const FString& Pattern);
-	TOptional<uint64> FindNextWord(class FSearchTask& Task, const FThreadSafeCounter& RequestCounter);
+	TOptional<RequiredType> FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter);
+	TSharedPtr<SWidget> GetPropertyWidgetForIndex(uint64 Index);
 
 	static void LogAllProperties();
 	static void WriteLog(const FString& Text, int LogNumber, bool IsAppend = true);
-
+	static FPropertyHolder& Get();
 private:
+	FPropertyHolder();
 	template <typename T>
-	T& AddToPropertyHolder(const T& Item);
+	T AddToPropertyHolder(const T& Item);
+	
 	void LoadProperties();
 
 	static bool IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern,
 	                               const TArray<int>& PArray);
 	TArray<FString> SettingDetailsNames;
-	TArray<ISettingDetailRef> SettingDetails;
+	TArray<TSharedRef<ISettingDetail>> SettingDetails;
 	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 };

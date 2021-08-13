@@ -8,6 +8,7 @@ FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::
 	: ChunkSize(ChunkSize),
 	  MessageEndpoint(MessageEndpoint),
 	  Result(0, FString(), 0, 0),
+	  PropertyHolder(FPropertyHolder::Get()),
 	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal))
 {
 }
@@ -92,16 +93,16 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 {
 	if (FindResultTask.PArray.Num() == 0)
 	{
-		FindResultTask.PArray = FDictionary::CreatePArray(FindResultTask.Request);
+		FindResultTask.PArray = FPropertyHolder::CreatePArray(FindResultTask.Request);
 		UE_LOG(LogTemp, Log, TEXT("EP : FSearcher calculated p-array"));
 	}
 	while (FindResultTask.DesiredResultSize > 0)
 	{
-		TOptional<FString> FoundWord = Dictionary.FindNextWord(FindResultTask, RequestCounter);
+		TOptional<uint64> FoundWord = PropertyHolder.FindNextWord(FindResultTask, RequestCounter);
 		if (FoundWord)
 		{
 			--FindResultTask.DesiredResultSize;
-			if (!AddFoundWordToResult(MoveTemp(FoundWord.GetValue()), FindResultTask.TaskId))
+			if (!AddFoundItemToResult(MoveTemp(FoundWord.GetValue()), FindResultTask.TaskId))
 			{
 				UE_LOG(LogTemp, Log, TEXT("EP : FSearcher couldn't add a found word"));
 				return true;
@@ -135,7 +136,7 @@ bool FSearcher::FillBuffer(FSearchTask& Task)
 	{
 		while (Task.DesiredBufferSize > 0)
 		{
-			TOptional<FString> FoundWord = Dictionary.FindNextWord(Task, RequestCounter);
+			TOptional<RequiredType> FoundWord = PropertyHolder.FindNextWord(Task, RequestCounter);
 			if (FoundWord)
 			{
 				--Task.DesiredBufferSize;
@@ -150,13 +151,13 @@ bool FSearcher::FillBuffer(FSearchTask& Task)
 	return false;
 }
 
-bool FSearcher::AddFoundWordToResult(FString&& Word, int32 TaskId)
+bool FSearcher::AddFoundItemToResult(RequiredType&& Item, int32 TaskId)
 // todo maybe add not by one word? Maybe use thread safe queue?
 {
 	FScopeLock ScopeLock(&InputOperationSection);
 	if (TaskId == RequestCounter.GetValue())
 	{
-		Result.ResultToGive.Add(MoveTemp(Word));
+		Result.ResultToGive.Add(MoveTemp(Item));
 		++Result.FoundResultCounter;
 		NotifyMainThread();
 		return true;
@@ -229,9 +230,9 @@ void FSearcher::NotifyMainThread()
 	}
 }
 
-TPair<bool, TArray<FString>> FSearcher::GetRequestData()
+TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
 {
-	TArray<FString> ReturnResult;
+	TArray<RequiredType> ReturnResult;
 	bool bIsSearchingFinished;
 	{
 		UE_LOG(LogTemp, Log, TEXT("EP : FSearcher returning found result"));
@@ -242,7 +243,7 @@ TPair<bool, TArray<FString>> FSearcher::GetRequestData()
 		Result.ResultToGive.Reset();
 		IsNotifiedMainThread = false;
 	}
-	return TPair<bool, TArray<FString>>{bIsSearchingFinished, ReturnResult};
+	return TPair<bool, TArray<RequiredType>>{bIsSearchingFinished, ReturnResult};
 }
 
 void FSearcher::SetInput(const FString& NewInput)

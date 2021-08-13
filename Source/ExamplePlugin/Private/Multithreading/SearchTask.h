@@ -1,6 +1,7 @@
 #pragma once
 
-class FSearchTask
+template<typename RequiredType>
+class TSearchTask
 {
 public:
 	int32 TaskId;
@@ -10,9 +11,9 @@ public:
 	TArray<int> PArray;
 	uint64 NextIndexToCheck;
 	bool bIsCompleteSearching = false;
-	TArray<FString> Buffer;
+	TArray<RequiredType> Buffer;
 
-	FSearchTask(int32 TaskId, FString&& Request, int32 DesiredResultSize, int32 DesiredBufferSize,
+	TSearchTask(int32 TaskId, FString&& Request, int32 DesiredResultSize, int32 DesiredBufferSize,
 	            TArray<int>&& PArray, uint64 NextIndexToCheck)
 		: TaskId(TaskId),
 		  Request(MoveTemp(Request)),

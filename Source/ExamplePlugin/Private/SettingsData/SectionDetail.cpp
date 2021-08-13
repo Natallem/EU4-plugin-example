@@ -5,8 +5,8 @@
 
 FSectionDetail::FSectionDetail(const ISettingsSectionPtr& SettingsSection,
                                const TSharedRef<FCategoryDetail>& CategoryDetail)
-	: SettingsSection(SettingsSection),
-	  CategoryDetail(CategoryDetail)
+	: CategoryDetail(CategoryDetail),
+	  SettingsSection(SettingsSection)
 {
 }
 

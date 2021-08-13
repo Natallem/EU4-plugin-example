@@ -16,11 +16,11 @@ FPropertyHolder::FPropertyHolder()
 }
 
 template <typename T>
-T& FPropertyHolder::AddToPropertyHolder(const T& Item)
+T FPropertyHolder::AddToPropertyHolder(const T& Item)
 {
 	SettingDetails.Add(Item);
-	SettingDetailsNames.Add(SettingDetails.Last()->GetDisplayName().ToString());
-	return StaticCast<T&>(SettingDetails.Last());
+	SettingDetailsNames.Add(Item->GetDisplayName().ToString());
+	return Item;
 }
 
 void FPropertyHolder::LoadProperties()
@@ -51,12 +51,16 @@ void FPropertyHolder::LoadProperties()
 	{
 		TArray<ISettingsSectionPtr> Sections;
 		Category->GetSections(Sections);
+		if (Sections.Num() == 0)
+		{
+			continue;
+		}
 		Sections.Sort(FSectionSortPredicate());
-		TSharedRef<FCategoryDetail>& CategoryDetail = AddToPropertyHolder(
+		TSharedRef<FCategoryDetail> CategoryDetail = AddToPropertyHolder(
 			MakeShared<FCategoryDetail>(SettingsModule, Category, Sections[0]));
 		for (const ISettingsSectionPtr& Section : Sections)
 		{
-			TSharedRef<FSectionDetail>& SectionDetail = AddToPropertyHolder(
+			TSharedRef<FSectionDetail> SectionDetail = AddToPropertyHolder(
 				MakeShared<FSectionDetail>(Section, CategoryDetail));
 
 			UObject* SectionObject = Section->GetSettingsObject().Get();
@@ -104,7 +108,7 @@ TArray<int> FPropertyHolder::CreatePArray(const FString& Pattern)
 	return Result;
 }
 
-TOptional<uint64> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
+TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
@@ -115,7 +119,7 @@ TOptional<uint64> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThread
 		{
 			if (RequestCounter.GetValue() != Task.TaskId)
 			{
-				return TOptional<uint64>();
+				return TOptional<RequiredType>();
 			}
 			IterationCounter = 0;
 		}
@@ -127,7 +131,12 @@ TOptional<uint64> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThread
 	}
 	Task.NextIndexToCheck = SettingDetailsNames.Num();
 	Task.bIsCompleteSearching = true;
-	return TOptional<uint64>();
+	return TOptional<RequiredType>();
+}
+
+TSharedPtr<SWidget> FPropertyHolder::GetPropertyWidgetForIndex(uint64 Index)
+{
+	return SettingDetails[Index]->GetRowWidget();
 }
 
 bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern,
@@ -286,4 +295,10 @@ void FPropertyHolder::WriteLog(const FString& Text, int LogNumber, bool IsAppend
 		FString::FromInt(LogNumber) + ".txt";
 	FFileHelper::SaveStringToFile(Text, *FileLog, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
 	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
+}
+
+FPropertyHolder& FPropertyHolder::Get()
+{
+	static FPropertyHolder Holder;
+	return Holder;
 }

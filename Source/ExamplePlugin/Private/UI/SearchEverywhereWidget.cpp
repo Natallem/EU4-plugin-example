@@ -15,7 +15,7 @@
 #include "Widgets/Layout/SScrollBox.h"
 // #include "SourceCodeAccess/Private/SourceCodeAccessSettings.h"
 #include "Classes/EditorStyleSettings.h"
-#include "Dictionary/PropertyHolder.h"
+#include "SettingsData/PropertyHolder.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
 #include "PropertyEditor/Private/SDetailsView.h"
 
@@ -125,7 +125,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 
 void SSearchEverywhereWidget::UpdateShownResults()
 {
-	TPair<bool, TArray<FString>> Result = Searcher->GetRequestData();
+	TPair<bool, TArray<RequiredType>> Result = Searcher->GetRequestData();
 	if (ShouldCleanList)
 	{
 		ShouldCleanList = false;
@@ -136,13 +136,13 @@ void SSearchEverywhereWidget::UpdateShownResults()
 	{
 		StringItems.Pop(false);
 	}
-	for (FString& Str : Result.Value)
+	for (RequiredType& Str : Result.Value)
 	{
-		StringItems.Add(MakeShared<TOptional<FString>>(Str));
+		StringItems.Add(MakeShared<TOptional<RequiredType>>(Str));
 	}
 	if (!Result.Key)
 	{
-		StringItems.Add(MakeShared<TOptional<FString>>());
+		StringItems.Add(MakeShared<TOptional<RequiredType>>());
 	}
 	ListView->RebuildList();
 }
@@ -196,8 +196,9 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 	TSharedPtr<SWidget> InnerWidget = ShowMoreResultsButton;
 	if (InItem->IsSet())
 	{
-		InnerWidget = SNew(STextBlock)
-			.Text(FText::FromString(*InItem->GetValue()));
+		InnerWidget = PropertyHolder.GetPropertyWidgetForIndex(InItem->GetValue());
+		// InnerWidget = SNew(STextBlock)
+			// .Text(FText::FromString(*InItem->GetValue()));
 	}
 	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
 	[
