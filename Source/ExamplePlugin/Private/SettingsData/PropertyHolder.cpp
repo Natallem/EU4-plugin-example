@@ -1,22 +1,94 @@
 #include "PropertyHolder.h"
 
-#include "ISettingsCategory.h"
+#include "CategoryDetail.h"
 #include "ISettingsContainer.h"
 #include "ISettingsModule.h"
-#include "ISettingsSection.h"
+#include "InnerCategoryDetail.h"
+#include "PropertyDetail.h"
+#include "SectionDetail.h"
 #include "Multithreading/SearchTask.h"
 #include "Misc/FileHelper.h"
 #include "PropertyEditor/Private/SDetailsView.h"
-
-void FPropertyHolder::LoadProperties()
-{
-}
 
 FPropertyHolder::FPropertyHolder()
 {
 	LoadProperties();
 }
 
+template <typename T>
+T& FPropertyHolder::AddToPropertyHolder(const T& Item)
+{
+	SettingDetails.Add(Item);
+	SettingDetailsNames.Add(SettingDetails.Last()->GetDisplayName().ToString());
+	return StaticCast<T&>(SettingDetails.Last());
+}
+
+void FPropertyHolder::LoadProperties()
+{
+	struct FSectionSortPredicate
+	{
+		FORCEINLINE bool operator()(ISettingsSectionPtr A, ISettingsSectionPtr B) const
+		{
+			if (!A.IsValid() && !B.IsValid())
+			{
+				return false;
+			}
+
+			if (A.IsValid() != B.IsValid())
+			{
+				return B.IsValid();
+			}
+
+			return (A->GetDisplayName().CompareTo(B->GetDisplayName()) < 0);
+		}
+	};
+
+	const TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
+	TArray<ISettingsCategoryPtr> EditorSettingContainerCategories;
+	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
+
+	for (ISettingsCategoryPtr& Category : EditorSettingContainerCategories)
+	{
+		TArray<ISettingsSectionPtr> Sections;
+		Category->GetSections(Sections);
+		Sections.Sort(FSectionSortPredicate());
+		TSharedRef<FCategoryDetail>& CategoryDetail = AddToPropertyHolder(
+			MakeShared<FCategoryDetail>(SettingsModule, Category, Sections[0]));
+		for (const ISettingsSectionPtr& Section : Sections)
+		{
+			TSharedRef<FSectionDetail>& SectionDetail = AddToPropertyHolder(
+				MakeShared<FSectionDetail>(Section, CategoryDetail));
+
+			UObject* SectionObject = Section->GetSettingsObject().Get();
+			FString SectionObjectName = SectionObject->GetName();
+
+			TMap<FString, TSharedRef<FInnerCategoryDetail>> PropertyCategoryMap;
+
+			for (TFieldIterator<FProperty> PropertyIt(SectionObject->GetClass()); PropertyIt; ++PropertyIt)
+			{
+				const FString& PropertyCategoryName = PropertyIt->GetMetaData(TEXT("Category"));
+				if (PropertyCategoryName.IsEmpty())
+				{
+					continue;
+				}
+				TSharedPtr<FInnerCategoryDetail> InnerCategoryDetail;
+				if (!PropertyCategoryMap.Contains(PropertyCategoryName))
+				{
+					InnerCategoryDetail = AddToPropertyHolder<TSharedRef<FInnerCategoryDetail>>(
+						MakeShared<FInnerCategoryDetail>(*PropertyIt, SectionDetail));
+					InnerCategoryDetail = PropertyCategoryMap.Add(PropertyCategoryName,
+					                                              InnerCategoryDetail.ToSharedRef());
+				}
+				else
+				{
+					InnerCategoryDetail = *PropertyCategoryMap.Find(PropertyCategoryName);
+				}
+				AddToPropertyHolder<TSharedRef<FPropertyDetail>>(
+						MakeShared<FPropertyDetail>(SectionObject,*PropertyIt,InnerCategoryDetail.ToSharedRef()));
+			}
+		}
+	}
+}
 
 TArray<int> FPropertyHolder::CreatePArray(const FString& Pattern)
 {
@@ -32,30 +104,30 @@ TArray<int> FPropertyHolder::CreatePArray(const FString& Pattern)
 	return Result;
 }
 
-TOptional<FString> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
+TOptional<uint64> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
-	for (int i = Task.NextIndexToCheck; i < PropertyNameArray.Num(); ++i)
+	for (int i = Task.NextIndexToCheck; i < SettingDetailsNames.Num(); ++i)
 	{
 		++IterationCounter;
 		if (IterationCounter == IterationBeforeCheck)
 		{
 			if (RequestCounter.GetValue() != Task.TaskId)
 			{
-				return TOptional<FString>();
+				return TOptional<uint64>();
 			}
 			IterationCounter = 0;
 		}
-		if (IsSatisfiesRequest(PropertyNameArray[i], Task.Request, Task.PArray))
+		if (IsSatisfiesRequest(SettingDetailsNames[i], Task.Request, Task.PArray))
 		{
 			Task.NextIndexToCheck = i + 1;
-			return PropertyNameArray[i];
+			return i;
 		}
 	}
-	Task.NextIndexToCheck = PropertyNameArray.Num();
+	Task.NextIndexToCheck = SettingDetailsNames.Num();
 	Task.bIsCompleteSearching = true;
-	return TOptional<FString>();
+	return TOptional<uint64>();
 }
 
 bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern,
@@ -99,9 +171,9 @@ void FPropertyHolder::LogAllProperties()
 	WriteLog("All properties log:\n", 2, false);
 
 	TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
-	TArray<TSharedPtr<ISettingsCategory>> EditorSettingContainerCategories;
+	TArray<ISettingsCategoryPtr> EditorSettingContainerCategories;
 	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
-	for (const TSharedPtr<ISettingsCategory>& Category : EditorSettingContainerCategories)
+	for (const ISettingsCategoryPtr& Category : EditorSettingContainerCategories)
 	{
 		FName CategoryName = Category->GetName();
 		const FText& CategoryDescription = Category->GetDescription();
@@ -111,13 +183,13 @@ void FPropertyHolder::LogAllProperties()
 			         *CategoryName.ToString(),
 			         *CategoryDisplayName.ToString(), *CategoryDescription.ToString()), 2);
 
-		TArray<TSharedPtr<ISettingsSection>> Sections;
+		TArray<ISettingsSectionPtr> Sections;
 		Category->GetSections(Sections);
 		if (CategoryDisplayName.ToString() == "Level Editor" && Sections.Num() == 0)
 		{
 			int x = 10; // todo delete
 		}
-		for (const TSharedPtr<ISettingsSection>& Section : Sections)
+		for (const ISettingsSectionPtr& Section : Sections)
 		{
 			const FName& SectionName = Section->GetName();
 			const FText& SectionDisplayName = Section->GetDisplayName();
