@@ -48,7 +48,7 @@ public class ExamplePlugin : ModuleRules
 				"Slate",
 				"SlateCore",
 				"MainFrame", "LocalizationService",
-				"GraphEditor", "DirectXMesh"
+				"GraphEditor",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

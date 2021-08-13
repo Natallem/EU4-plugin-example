@@ -67,8 +67,8 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 		[
 			SNew(SButton)
 			.Text(LOCTEXT("Button3Text", "Button3"))
-			// .OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
-			// FName("Appearance"))
+			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
+			FName("Appearance"))
 		]
 
 
