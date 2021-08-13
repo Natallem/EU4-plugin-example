@@ -82,10 +82,10 @@ void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging NOT contains inner"));
 	}
 	// bNeedToClose = !NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef());
-	/*if (bNeedToClose)
+	if (bNeedToClose)
 	{
 		RequestDestroyWindow();
-	}*/
+	}
 }
 
 FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)

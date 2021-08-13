@@ -14,11 +14,13 @@
 #include "Widgets/Layout/SScrollBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
 // #include "SourceCodeAccess/Private/SourceCodeAccessSettings.h"
+#include "Widgets/SWindow.h"
 #include "Classes/EditorStyleSettings.h"
 #include "SettingsData/PropertyHolder.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
 #include "PropertyEditor/Private/SDetailsView.h"
 #include "Widgets/Input/SEditableText.h"
+#include "Templates/SharedPointer.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
@@ -30,7 +32,12 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 		.ItemHeight(64)
 		.SelectionMode(ESelectionMode::None)
 		.ListItemsSource(&StringItems)
-		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget);
+		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget)
+		.OnMouseButtonClick_Lambda([this](FListItemPtr Item)
+	                                {
+		                                StaticCastSharedPtr<SWindow>(GetParentWidget())->RequestDestroyWindow();
+	                                });
+
 
 	ListTableWidget = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
@@ -54,7 +61,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 			SNew(SButton)
 			.Text(LOCTEXT("Button1Text", "Button1"))
 			// .OnClicked(FOnClicked::CreateStatic(&SSearchEverywhereWidget::OpenSettings, FName("Editor"),
-			                                    // FName("General"), FName("Appearance")))
+			// FName("General"), FName("Appearance")))
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
@@ -69,7 +76,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSe
 			SNew(SButton)
 			.Text(LOCTEXT("Button3Text", "Button3"))
 			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
-			FName("Appearance"))
+			           FName("Appearance"))
 		]
 
 
@@ -199,7 +206,7 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 	{
 		InnerWidget = PropertyHolder.GetPropertyWidgetForIndex(InItem->GetValue());
 		// InnerWidget = SNew(STextBlock)
-			// .Text(FText::FromString(*InItem->GetValue()));
+		// .Text(FText::FromString(*InItem->GetValue()));
 	}
 	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
 	[
@@ -222,7 +229,6 @@ FReply SSearchEverywhereWidget::GetAllProperties()
 	FPropertyHolder::LogAllProperties();
 	return FReply::Handled();
 }
-
 
 
 #undef LOCTEXT_NAMESPACE
