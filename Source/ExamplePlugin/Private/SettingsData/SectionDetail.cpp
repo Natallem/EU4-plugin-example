@@ -2,6 +2,7 @@
 
 #include "ISettingsModule.h"
 #include "CategoryDetail.h"
+#include "Widgets/Input/SButton.h"
 
 FSectionDetail::FSectionDetail(const ISettingsSectionPtr& SettingsSection,
                                const TSharedRef<FCategoryDetail>& CategoryDetail)

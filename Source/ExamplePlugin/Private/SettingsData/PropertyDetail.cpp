@@ -4,6 +4,7 @@
 #include "InnerCategoryDetail.h"
 #include "ISettingsModule.h"
 #include "SectionDetail.h"
+#include "Widgets/Input/SButton.h"
 
 FPropertyDetail::FPropertyDetail(UObject* SettingObject, FProperty* Property,
                                  const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail):

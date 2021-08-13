@@ -1,7 +1,13 @@
 #pragma once
+#include "Modules/ModuleManager.h"
 #include "Widgets/Input/SButton.h"
 #include "Multithreading/Configuration.h"
 #include "SettingsData/PropertyHolder.h"
+#include "ISettingsModule.h"
+
+class SEditableText;
+template <typename T>
+class SListView;
 
 class SSearchEverywhereWidget final : public SCompoundWidget
 {
@@ -35,12 +41,12 @@ private:
 	void OnTextChanged(const FText& Filter);
 	FReply OnButtonShowMoreResultsClicked() const;
 
-	class ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
+	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 	TSharedPtr<SEditableText> EditableText;
 	TSharedPtr<SListViewWidget> ListView;
 	TArray<FListItemPtr> StringItems;
 	TSharedPtr<SButton> ShowMoreResultsButton;
-	TSharedPtr<class SEditableText> EditableTextBox;
+	TSharedPtr<SEditableText> EditableTextBox;
 	TSharedPtr<FSearcher> Searcher;
 	TSharedPtr<SWidget> ListTableWidget;
 	bool ShouldCleanList = false;

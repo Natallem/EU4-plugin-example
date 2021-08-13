@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Multithreading/Configuration.h"
+#include "CoreMinimal.h"
+#include "Modules/ModuleManager.h"
+
+class SWidget;
 class ISettingDetail;
 class ISettingsModule;
 

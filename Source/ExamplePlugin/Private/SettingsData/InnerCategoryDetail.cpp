@@ -3,6 +3,7 @@
 #include "CategoryDetail.h"
 #include "ISettingsModule.h"
 #include "SectionDetail.h"
+#include "Widgets/Input/SButton.h"
 
 FInnerCategoryDetail::FInnerCategoryDetail(FProperty* Property,
                                            const TSharedRef<FSectionDetail>& SectionDetail):

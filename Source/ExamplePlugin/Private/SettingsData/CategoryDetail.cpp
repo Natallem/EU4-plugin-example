@@ -1,6 +1,7 @@
 #include "CategoryDetail.h"
 
 #include "ISettingsModule.h"
+#include "Widgets/Input/SButton.h"
 
 FCategoryDetail::FCategoryDetail(ISettingsModule& SettingsModule,
 	const ISettingsCategoryPtr& SettingCategory, const ISettingsSectionPtr& FirstSettingsSection): SettingsModule(SettingsModule),

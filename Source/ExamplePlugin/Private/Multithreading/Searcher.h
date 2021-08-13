@@ -3,9 +3,14 @@
 #include "SearchTask.h"
 #include "SettingsData/PropertyHolder.h"
 #include "Configuration.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
+
 
 template <typename T>
 class TSearchTask;
+
+class FRunnableThread;
 
 template <typename RequiredType>
 struct TInputResult

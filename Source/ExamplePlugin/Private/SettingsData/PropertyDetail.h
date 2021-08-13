@@ -1,6 +1,6 @@
 #pragma once
+
 #include "ISettingDetail.h"
-#include "ISettingsCategory.h"
 #include "ISettingsSection.h"
 
 class ISettingsModule;

@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "InputCoreTypes.h"
 #include "Multithreading/CallbackHandler.h"
 #include "Multithreading/Searcher.h"
 
+struct FKeyEvent;
 class FToolBarBuilder;
 class FMenuBuilder;
 

@@ -1,5 +1,8 @@
 #pragma once
-// #include "Messages/WordsFoundMessage.h"
+#include "Messages/WordsFoundMessage.h"
+#include "Templates/SharedPointer.h"
+
+class IMessageContext;
 
 class FCallbackHandler
 {
@@ -11,5 +14,5 @@ public:
 private:
 	TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
 	TWeakPtr<SSearchEverywhereWindow>& WindowToPassResult;
-	void HandleFoundWords(const struct FWordsFound& Message, const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context);
+	void HandleFoundWords(const FWordsFound& Message, const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context);
 };

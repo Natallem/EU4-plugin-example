@@ -18,6 +18,7 @@
 #include "SettingsData/PropertyHolder.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
 #include "PropertyEditor/Private/SDetailsView.h"
+#include "Widgets/Input/SEditableText.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 

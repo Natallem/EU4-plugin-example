@@ -2,6 +2,7 @@
 
 #include "SearchEverywhereWidget.h"
 #include "Interfaces/IMainFrameModule.h"
+#include "Layout/WidgetPath.h"
 
 void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
                                         TSharedPtr<FUICommandList> NewPluginCommandList,

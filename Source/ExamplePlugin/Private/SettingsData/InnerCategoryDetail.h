@@ -1,6 +1,9 @@
 #pragma once
 #include "ISettingDetail.h"
+#include "CoreMinimal.h"
 
+class SWidget;
+class FProperty;
 class FSectionDetail;
 
 class FInnerCategoryDetail : public ISettingDetail

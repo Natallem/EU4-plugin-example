@@ -1,4 +1,7 @@
 #pragma once
+#include "Widgets/SWindow.h"
+
+class FUICommandList;
 
 enum ESearchModeTab
 {

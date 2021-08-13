@@ -1,3 +1,4 @@
+#ifdef NOTSKIP
 #include "Dictionary.h"
 
 #include "Multithreading/SearchTask.h"
@@ -32,7 +33,7 @@ TArray<int> FDictionary::CreatePArray(const FString& Pattern)
 	return Result;
 }
 
-TOptional<FString> FDictionary::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
+TOptional<FString> FDictionary::FindNextWord(TSearchTask& Task, const FThreadSafeCounter& RequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
@@ -76,3 +77,4 @@ bool FDictionary::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, 
 	}
 	return false;
 }
+#endif
