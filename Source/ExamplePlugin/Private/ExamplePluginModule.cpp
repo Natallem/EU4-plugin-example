@@ -52,7 +52,7 @@ void FExamplePluginModule::ShutdownModule()
 void FExamplePluginModule::PluginButtonClicked()
 {
 	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = ExamplePluginWindow.Pin();
-	if (ExistingWindow.IsValid() && ExistingWindow->IsAccessible())
+	if (ExistingWindow.IsValid() && ExistingWindow->IsActive())
 	{
 		bool t = ExistingWindow->IsActive();
 		
