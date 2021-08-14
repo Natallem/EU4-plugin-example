@@ -1,9 +1,10 @@
 #pragma once
+
+#include "ISettingsModule.h"
 #include "Modules/ModuleManager.h"
-#include "Widgets/Input/SButton.h"
 #include "Multithreading/Configuration.h"
 #include "SettingsData/PropertyHolder.h"
-#include "ISettingsModule.h"
+#include "Widgets/Input/SButton.h"
 
 class SEditableText;
 template <typename T>
@@ -13,8 +14,7 @@ class SSearchEverywhereWidget final : public SCompoundWidget
 {
 private:
 	typedef TSharedPtr<TOptional<RequiredType>> FListItemPtr;
-	typedef SListView<FListItemPtr> SListViewWidget;
-
+ 	typedef SListView<FListItemPtr> SListViewWidget;
 public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWidget)
 		{
@@ -24,6 +24,7 @@ public:
 	void Construct(const FArguments& InArgs, TSharedRef<SWindow> InParentWindow, TSharedRef<class FSearcher> Searcher);
 
 	void UpdateShownResults();
+	virtual bool SupportsKeyboardFocus() const override;
 protected:
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath) override;
 	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
@@ -33,20 +34,18 @@ protected:
 	FReply OpenSettings(FName ContainerName, FName CategoryName, FName SectionName);
 
 private:
-	// USourceCodeAccessSettings * USourceCodeAccessSettingsPtr;
+	EActiveTimerReturnType SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const;
 	FReply GetAllProperties();
-
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
 	                                                        const TSharedRef<STableViewBase>& OwnerTable);
 	void OnTextChanged(const FText& Filter);
 	FReply OnButtonShowMoreResultsClicked() const;
 
 	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
-	TSharedPtr<SEditableText> EditableText;
 	TSharedPtr<SListViewWidget> ListView;
-	TArray<FListItemPtr> StringItems;
+	TArray<FListItemPtr> ItemsSource;
 	TSharedPtr<SButton> ShowMoreResultsButton;
-	TSharedPtr<SEditableText> EditableTextBox;
+	TSharedPtr<SEditableText> SearchEditableText;
 	TSharedPtr<FSearcher> Searcher;
 	TSharedPtr<SWidget> ListTableWidget;
 	bool ShouldCleanList = false;

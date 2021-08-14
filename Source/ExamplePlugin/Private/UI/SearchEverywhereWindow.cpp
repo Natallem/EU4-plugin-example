@@ -4,6 +4,11 @@
 #include "Interfaces/IMainFrameModule.h"
 #include "Layout/WidgetPath.h"
 
+bool SSearchEverywhereWindow::SupportsKeyboardFocus() const
+{
+	return InnerWidget->SupportsKeyboardFocus();
+}
+
 void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
                                         TSharedPtr<FUICommandList> NewPluginCommandList,
                                         TSharedRef<FSearcher> SearcherArgument)
@@ -118,7 +123,6 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
 {
 	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
-	{		SWindow::OnFocusLost(InFocusEvent);	}
 	SWindow::OnFocusLost(InFocusEvent);;
 	if (bNeedToClose)
 	{

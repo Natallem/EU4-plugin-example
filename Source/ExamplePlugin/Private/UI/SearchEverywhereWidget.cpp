@@ -1,28 +1,15 @@
 #include "SearchEverywhereWidget.h"
 
 #include "EditorStyleSet.h"
-#include "IDetailTreeNode.h"
-#include "IPropertyRowGenerator.h"
-#include "ISettingsCategory.h"
-#include "ISettingsContainer.h"
-#include "ISettingsModule.h"
-#include "ISettingsSection.h"
-#include "PropertyPath.h"
-#include "STextPropertyEditableTextBox.h"
-#include "Misc/FileHelper.h"
-#include "Multithreading/Searcher.h"
-#include "Widgets/Layout/SScrollBorder.h"
-#include "Widgets/Layout/SScrollBox.h"
-// #include "SourceCodeAccess/Private/SourceCodeAccessSettings.h"
-#include "Widgets/SWindow.h"
-#include "Classes/EditorStyleSettings.h"
 #include "Framework/Application/SlateApplication.h"
-#include "SettingsData/PropertyHolder.h"
-#include "PropertyEditor/Private/DetailItemNode.h"
-#include "PropertyEditor/Private/SDetailsView.h"
+#include "Multithreading/Searcher.h"
+// #include "SettingsData/PropertyHolder.h"
 #include "SettingsData/AbstractSettingDetail.h"
-#include "Widgets/Input/SEditableText.h"
 #include "Templates/SharedPointer.h"
+#include "Widgets/Input/SEditableText.h"
+#include "Widgets/Views/SListView.h"
+#include "Widgets/Layout/SScrollBorder.h"
+#include "Widgets/SWindow.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
@@ -32,20 +19,19 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWi
 	Searcher = SearcherArgument;
 	ParentWindow = InParentWindow;
 	ListView = SNew(SListViewWidget)
-		.IsFocusable(true)
+		// .IsFocusable(true)
 		.ItemHeight(64)
-		.SelectionMode(ESelectionMode::None)
-		.ListItemsSource(&StringItems)
+		.ListItemsSource(&ItemsSource)
+		.SelectionMode(ESelectionMode::Single)
 		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget)
 		.OnMouseButtonClick_Lambda([this](FListItemPtr InItem)
 	                                {
-		                                PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
-		                                UE_LOG(LogTemp, Log, TEXT("EP : OnMouseButtonClick_Lambda Close"));
-ParentWindow->RequestDestroyWindow();
-		                                // FSlateApplication::Get().RequestDestroyWindow(ParentWindow.ToSharedRef());
-		                                // StaticCastSharedPtr<SWindow>(GetParentWidget())->RequestDestroyWindow();
-	                                })
-	.SelectionMode(ESelectionMode::Single);
+		                                if (InItem->IsSet())
+		                                {
+			                                PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
+			                                ParentWindow->RequestDestroyWindow();
+		                                }
+	                                });
 
 
 	ListTableWidget = SNew(SVerticalBox)
@@ -68,34 +54,16 @@ ParentWindow->RequestDestroyWindow();
 		.AutoWidth()
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("Button1Text", "Button1"))
-			// .OnClicked(FOnClicked::CreateStatic(&SSearchEverywhereWidget::OpenSettings, FName("Editor"),
-			// FName("General"), FName("Appearance")))
+			.Text(LOCTEXT("OpenSettingsTestingTextButton", "Open Settings"))
+			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"),
+			           FName("General"), FName("Appearance"))
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
 			SNew(SButton)
-			.Text(LOCTEXT("Button2Text", "Button2"))
+			.Text(LOCTEXT("LogAllPropertiesButtonText", "Log all properties"))
 			.OnClicked(this, &SSearchEverywhereWidget::GetAllProperties)
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SNew(SButton)
-			.Text(LOCTEXT("Button3Text", "Button3"))
-			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"), FName("General"),
-			           FName("Appearance"))
-		]
-
-
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SNew(SButton)
-			.ContentPadding(0.4)
-			.ClickMethod(EButtonClickMethod::MouseDown)
-			.Text(LOCTEXT("Button4Text", "Button4"))
 		];
 
 	const TSharedRef<SWidget> SearchTableWidget =
@@ -104,10 +72,14 @@ ParentWindow->RequestDestroyWindow();
 		  .Padding(10.0f)
 		  .FillWidth(1.0f)
 		[
-			SAssignNew(EditableTextBox, SEditableText)
+			SAssignNew(SearchEditableText, SEditableText)
 			.RevertTextOnEscape(true)
 			.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
+			.SelectAllTextWhenFocused(true)
+			.HintText(LOCTEXT("SearchEditableTextHint", "Type here ..."))
 		];
+	RegisterActiveTimer(
+		0.f, FWidgetActiveTimerDelegate::CreateSP(this, &SSearchEverywhereWidget::SetFocusPostConstruct));
 
 	ChildSlot
 	[
@@ -140,28 +112,42 @@ ParentWindow->RequestDestroyWindow();
 	];
 }
 
+EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
+{
+	if (SearchEditableText.IsValid())
+	{
+		FSlateApplication::Get().SetKeyboardFocus(SearchEditableText.ToSharedRef(), EFocusCause::SetDirectly);
+	}
+	return EActiveTimerReturnType::Stop;
+}
+
 void SSearchEverywhereWidget::UpdateShownResults()
 {
 	TPair<bool, TArray<RequiredType>> Result = Searcher->GetRequestData();
 	if (ShouldCleanList)
 	{
 		ShouldCleanList = false;
-		StringItems.Reset();
+		ItemsSource.Reset();
 	}
 
-	if (StringItems.Num() > 0 && !StringItems.Last()->IsSet())
+	if (ItemsSource.Num() > 0 && !ItemsSource.Last()->IsSet())
 	{
-		StringItems.Pop(false);
+		ItemsSource.Pop(false);
 	}
 	for (RequiredType& Str : Result.Value)
 	{
-		StringItems.Add(MakeShared<TOptional<RequiredType>>(Str));
+		ItemsSource.Add(MakeShared<TOptional<RequiredType>>(Str));
 	}
 	if (!Result.Key)
 	{
-		StringItems.Add(MakeShared<TOptional<RequiredType>>());
+		ItemsSource.Add(MakeShared<TOptional<RequiredType>>());
 	}
 	ListView->RebuildList();
+}
+
+bool SSearchEverywhereWidget::SupportsKeyboardFocus() const
+{
+	return true;
 }
 
 FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)

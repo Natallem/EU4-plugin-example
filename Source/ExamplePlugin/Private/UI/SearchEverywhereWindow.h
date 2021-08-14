@@ -31,6 +31,7 @@ public:
 		SLATE_ATTRIBUTE(FText, SearchRequest)
 	SLATE_END_ARGS()
 
+	virtual bool SupportsKeyboardFocus() const override;
 
 	TWeakPtr<SWidget> PreviousFocusedWidget;
 	TSharedPtr<FUICommandList> PluginCommandList;
