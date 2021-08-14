@@ -211,7 +211,7 @@ void FPropertyHolder::LogAllProperties()
 			WriteLog(FString::Printf(
 				TEXT("	SectionDisplayName: '%s',SectionName: '%s', SectionDescription: '%s'\n"),
 				*SectionDisplayName.ToString(), *SectionName.ToString(), *SectionDescription.ToString()));
-			continue;
+			// continue;
 			FText PropertyDisplayName;
 			TSet<FString> PropValues;
 			TSet<FString> PathValues;
@@ -294,10 +294,8 @@ void FPropertyHolder::LogAllProperties()
 
 void FPropertyHolder::WriteLog(const FString& Text, bool IsAppend)
 {
-	FString FileLog =
-		TEXT(
-			R"(C:\Projects\UnrealEngineProjects\ExampleProject\ExampleProject\Plugins\ExamplePlugin\Resources\PropertyLog.txt)");
-	FFileHelper::SaveStringToFile(Text, *FileLog, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog.txt";
+	FFileHelper::SaveStringToFile(Text, *FileLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
 	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
 }
 
@@ -310,13 +308,13 @@ FPropertyHolder& FPropertyHolder::Get()
 /** Need to load AutoDiscoveredSettings in Setting Module. Otherwise not all properties will be discovered by data holder. */
 void FPropertyHolder::ForceUpdateSettings() const
 {
-	ISettingsContainerPtr SettingsContainer = SettingsModule.GetContainer("Editor");
+	const ISettingsContainerPtr SettingsContainer = SettingsModule.GetContainer("Editor");
 
 	if (SettingsContainer.IsValid())
 	{
 		ISettingsEditorModule& SettingsEditorModule = FModuleManager::GetModuleChecked<ISettingsEditorModule>(
 			"SettingsEditor");
-		ISettingsEditorModelRef SettingsEditorModel = SettingsEditorModule.CreateModel(SettingsContainer.ToSharedRef());
+		const ISettingsEditorModelRef SettingsEditorModel = SettingsEditorModule.CreateModel(SettingsContainer.ToSharedRef());
 
 		SettingsEditorModule.CreateEditor(SettingsEditorModel);
 	}
