@@ -10,13 +10,12 @@
 #include "Misc/FileHelper.h"
 #include "PropertyEditor/Private/SDetailsView.h"
 #include "AbstractSettingDetail.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "ISettingsEditorModel.h"
+#include "ISettingsEditorModule.h"
 
 FPropertyHolder::FPropertyHolder()
 {
+	ForceUpdateSettings();
 	LoadProperties();
 }
 
@@ -165,8 +164,9 @@ bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPatte
 
 void FPropertyHolder::LogAllProperties()
 {
-	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
+	// ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
 
+	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 	FDetailsViewArgs DetailsViewArgs;
 	DetailsViewArgs.bShowDifferingPropertiesOption = true;
 	DetailsViewArgs.bShowModifiedPropertiesOption = true;
@@ -194,8 +194,8 @@ void FPropertyHolder::LogAllProperties()
 		const FText& CategoryDisplayName = Category->GetDisplayName();
 		WriteLog(FString::Printf(
 			TEXT("CategoryDisplayName: '%s', CategoryName: '%s',CategoryDescription: '%s'\n"),
-			
-			*CategoryDisplayName.ToString(),*CategoryName.ToString(), *CategoryDescription.ToString()));
+
+			*CategoryDisplayName.ToString(), *CategoryName.ToString(), *CategoryDescription.ToString()));
 
 		TArray<ISettingsSectionPtr> Sections;
 		Category->GetSections(Sections);
@@ -211,7 +211,7 @@ void FPropertyHolder::LogAllProperties()
 			WriteLog(FString::Printf(
 				TEXT("	SectionDisplayName: '%s',SectionName: '%s', SectionDescription: '%s'\n"),
 				*SectionDisplayName.ToString(), *SectionName.ToString(), *SectionDescription.ToString()));
-			// continue;
+			continue;
 			FText PropertyDisplayName;
 			TSet<FString> PropValues;
 			TSet<FString> PathValues;
@@ -305,4 +305,19 @@ FPropertyHolder& FPropertyHolder::Get()
 {
 	static FPropertyHolder Holder;
 	return Holder;
+}
+
+/** Need to load AutoDiscoveredSettings in Setting Module. Otherwise not all properties will be discovered by data holder. */
+void FPropertyHolder::ForceUpdateSettings() const
+{
+	ISettingsContainerPtr SettingsContainer = SettingsModule.GetContainer("Editor");
+
+	if (SettingsContainer.IsValid())
+	{
+		ISettingsEditorModule& SettingsEditorModule = FModuleManager::GetModuleChecked<ISettingsEditorModule>(
+			"SettingsEditor");
+		ISettingsEditorModelRef SettingsEditorModel = SettingsEditorModule.CreateModel(SettingsContainer.ToSharedRef());
+
+		SettingsEditorModule.CreateEditor(SettingsEditorModel);
+	}
 }

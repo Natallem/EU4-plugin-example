@@ -24,6 +24,7 @@ public:
 	static void WriteLog(const FString& Text, bool IsAppend = true);
 	static FPropertyHolder& Get();
 private:
+	void ForceUpdateSettings() const;
 	FPropertyHolder();
 	template <typename T>
 	T AddToPropertyHolder(const T& Item);
