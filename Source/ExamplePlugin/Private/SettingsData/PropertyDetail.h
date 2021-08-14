@@ -1,25 +1,22 @@
 #pragma once
 
-#include "ISettingDetail.h"
+#include "AbstractSettingDetail.h"
 #include "ISettingsSection.h"
 
 class ISettingsModule;
 class FInnerCategoryDetail;
 
-class FPropertyDetail : public ISettingDetail
+class FPropertyDetail : public FAbstractSettingDetail
 {
 public:
 	FPropertyDetail(UObject* SettingObject, FProperty* Property,
-		const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail);
-
-	virtual TSharedRef<SWidget> GetRowWidget() override;
-	virtual FText GetDisplayName() override;
+	                const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail);
+	
+	virtual FText GetDisplayName() const override;
+	virtual void DoAction() const override;
 
 private:
 	UObject* SettingObject;
 	FProperty* Property;
 	TSharedRef<FInnerCategoryDetail> InnerCategoryDetail;
-	
-	TSharedPtr<SWidget> RowWidget;
-	void CreateRowWidget();
 };

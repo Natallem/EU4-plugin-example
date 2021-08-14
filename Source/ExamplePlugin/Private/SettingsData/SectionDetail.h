@@ -1,20 +1,17 @@
 #pragma once
+#include "AbstractSettingDetail.h"
 #include "ISettingsSection.h"
-#include "ISettingDetail.h"
 
 class FCategoryDetail;
 
-class FSectionDetail : public ISettingDetail
+class FSectionDetail : public FAbstractSettingDetail
 {
 public:
 	FSectionDetail(const ISettingsSectionPtr& SettingsSection, const TSharedRef<FCategoryDetail>& CategoryDetail);
 
-	virtual TSharedRef<SWidget> GetRowWidget() override;
-	virtual FText GetDisplayName() override;
+	virtual FText GetDisplayName() const override;
+	virtual void DoAction() const override;
 
 	TSharedRef<FCategoryDetail> CategoryDetail;
 	ISettingsSectionPtr SettingsSection;
-private:
-	TSharedPtr<SWidget> RowWidget;
-	void CreateRowWidget();
 };

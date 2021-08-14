@@ -14,31 +14,17 @@ FPropertyDetail::FPropertyDetail(UObject* SettingObject, FProperty* Property,
 {
 }
 
-TSharedRef<SWidget> FPropertyDetail::GetRowWidget()
-{
-	if (!RowWidget.IsValid())
-	{
-		CreateRowWidget();
-	}
-	return RowWidget.ToSharedRef();
-}
-
-FText FPropertyDetail::GetDisplayName()
+FText FPropertyDetail::GetDisplayName() const
 {
 	return Property->GetDisplayNameText();
 }
 
-void FPropertyDetail::CreateRowWidget()
+void FPropertyDetail::DoAction() const
 {
-	SAssignNew(RowWidget, SButton)
-		.Text(GetDisplayName())
-		.OnClicked_Lambda([this]()
-	                              {
-		                              InnerCategoryDetail->SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
-			                              FName("Editor"),
-			                              FName(InnerCategoryDetail->SectionDetail->CategoryDetail->GetDisplayName().
-			                                                         ToString()),
-			                              FName(InnerCategoryDetail->SectionDetail->GetDisplayName().ToString()));
-		                              return FReply::Handled();
-	                              });
+	InnerCategoryDetail->SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
+		FName("Editor"),
+		FName(InnerCategoryDetail->SectionDetail->CategoryDetail->GetDisplayName().
+		                           ToString()),
+		FName(InnerCategoryDetail->SectionDetail->GetDisplayName().ToString()));
 }
+

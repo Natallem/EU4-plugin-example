@@ -52,8 +52,10 @@ void FExamplePluginModule::ShutdownModule()
 void FExamplePluginModule::PluginButtonClicked()
 {
 	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = ExamplePluginWindow.Pin();
-	if (ExistingWindow.IsValid())
+	if (ExistingWindow.IsValid() && ExistingWindow->IsAccessible())
 	{
+		bool t = ExistingWindow->IsActive();
+		
 		UE_LOG(LogTemp, Log, TEXT("EP : Bring to front window"));
 		ExistingWindow->BringToFront();
 	}

@@ -9,6 +9,11 @@
 #include "Multithreading/SearchTask.h"
 #include "Misc/FileHelper.h"
 #include "PropertyEditor/Private/SDetailsView.h"
+#include "AbstractSettingDetail.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 
 FPropertyHolder::FPropertyHolder()
 {
@@ -88,7 +93,7 @@ void FPropertyHolder::LoadProperties()
 					InnerCategoryDetail = *PropertyCategoryMap.Find(PropertyCategoryName);
 				}
 				AddToPropertyHolder<TSharedRef<FPropertyDetail>>(
-						MakeShared<FPropertyDetail>(SectionObject,*PropertyIt,InnerCategoryDetail.ToSharedRef()));
+					MakeShared<FPropertyDetail>(SectionObject, *PropertyIt, InnerCategoryDetail.ToSharedRef()));
 			}
 		}
 	}
@@ -134,9 +139,9 @@ TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& Task, const F
 	return TOptional<RequiredType>();
 }
 
-TSharedPtr<SWidget> FPropertyHolder::GetPropertyWidgetForIndex(uint64 Index)
+TSharedRef<const FAbstractSettingDetail> FPropertyHolder::GetSettingDetail(uint64 Index) const
 {
-	return SettingDetails[Index]->GetRowWidget();
+	return SettingDetails[Index];
 }
 
 bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern,
@@ -177,7 +182,7 @@ void FPropertyHolder::LogAllProperties()
 	// DetailsView->SetOnDisplayedPropertiesChanged(
 	// ::FOnDisplayedPropertiesChanged::CreateRaw(this, &SSearchEverywhereWidget::HandlePropertiesChanged));
 
-	WriteLog("All properties log:\n", 2, false);
+	WriteLog("All properties log:\n", false);
 
 	TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
 	TArray<ISettingsCategoryPtr> EditorSettingContainerCategories;
@@ -188,26 +193,25 @@ void FPropertyHolder::LogAllProperties()
 		const FText& CategoryDescription = Category->GetDescription();
 		const FText& CategoryDisplayName = Category->GetDisplayName();
 		WriteLog(FString::Printf(
-			         TEXT("CategoryName: '%s', CategoryDisplayName: '%s', CategoryDescription: '%s'\n"),
-			         *CategoryName.ToString(),
-			         *CategoryDisplayName.ToString(), *CategoryDescription.ToString()), 2);
+			TEXT("CategoryDisplayName: '%s', CategoryName: '%s',CategoryDescription: '%s'\n"),
+			
+			*CategoryDisplayName.ToString(),*CategoryName.ToString(), *CategoryDescription.ToString()));
 
 		TArray<ISettingsSectionPtr> Sections;
 		Category->GetSections(Sections);
-		if (CategoryDisplayName.ToString() == "Level Editor" && Sections.Num() == 0)
+		Sections.Sort([](const ISettingsSectionPtr& A, const ISettingsSectionPtr& B)
 		{
-			int x = 10; // todo delete
-		}
+			return (A->GetDisplayName().CompareTo(B->GetDisplayName()) < 0);
+		});
 		for (const ISettingsSectionPtr& Section : Sections)
 		{
 			const FName& SectionName = Section->GetName();
 			const FText& SectionDisplayName = Section->GetDisplayName();
 			const FText& SectionDescription = Section->GetDescription();
 			WriteLog(FString::Printf(
-				         TEXT("	SectionName: '%s', SectionDisplayName: '%s', SectionDescription: '%s'\n"),
-				         *SectionName.ToString(),
-				         *SectionDisplayName.ToString(), *SectionDescription.ToString()), 2);
-
+				TEXT("	SectionDisplayName: '%s',SectionName: '%s', SectionDescription: '%s'\n"),
+				*SectionDisplayName.ToString(), *SectionName.ToString(), *SectionDescription.ToString()));
+			// continue;
 			FText PropertyDisplayName;
 			TSet<FString> PropValues;
 			TSet<FString> PathValues;
@@ -216,7 +220,7 @@ void FPropertyHolder::LogAllProperties()
 			UObject* SectionObject = Section->GetSettingsObject().Get();
 			FString SectionObjectName = SectionObject->GetName();
 
-			WriteLog(FString::Printf(TEXT("		SectionObjectName: '%s'\n"), *SectionObjectName), 2);
+			WriteLog(FString::Printf(TEXT("		SectionObjectName: '%s'\n"), *SectionObjectName));
 			for (TFieldIterator<FProperty> PropertyIt(SectionObject->GetClass()); PropertyIt; ++PropertyIt)
 			{
 				const FString& PropertyCategoryName = PropertyIt->GetMetaData(TEXT("Category"));
@@ -247,12 +251,12 @@ void FPropertyHolder::LogAllProperties()
 
 			for (const TPair<FString, TArray<FProperty*>>& Pair : PropertyCategoryMap)
 			{
-				WriteLog(FString::Printf(TEXT("		PropertyCategoryName: '%s'\n"), *Pair.Key), 2);
+				WriteLog(FString::Printf(TEXT("		PropertyCategoryName: '%s'\n"), *Pair.Key));
 				for (FProperty* Property : Pair.Value)
 				{
 					WriteLog(FString::Printf(
-						         TEXT("			Both: '%s', Display name: '%s'\n"), *Property->GetNameCPP(),
-						         *Property->GetDisplayNameText().ToString()), 2);
+						TEXT("			Both: '%s', Display name: '%s'\n"), *Property->GetNameCPP(),
+						*Property->GetDisplayNameText().ToString()));
 				}
 			}
 
@@ -261,18 +265,18 @@ void FPropertyHolder::LogAllProperties()
 			if (InPathNotInProp.Num() != 0)
 			{
 				WriteLog(FString::Printf(
-					         TEXT("		Difference: in Paths, not in Properties(Category: '%s', Section: '%s'):\n"),
-					         *CategoryDisplayName.ToString(), *SectionDisplayName.ToString()), 2);
+					TEXT("		Difference: in Paths, not in Properties(Category: '%s', Section: '%s'):\n"),
+					*CategoryDisplayName.ToString(), *SectionDisplayName.ToString()));
 				for (FString& Diff : InPathNotInProp)
 				{
-					WriteLog("			\'" + Diff + "\'\n", 2);
+					WriteLog("			\'" + Diff + "\'\n");
 				}
 			}
 			if (InPropNotInPath.Num() != 0)
 			{
 				WriteLog(FString::Printf(
-					         TEXT("		Difference: in Properties, not in Paths(Category: '%s', Section: '%s'):\n"),
-					         *CategoryDisplayName.ToString(), *SectionDisplayName.ToString()), 2);
+					TEXT("		Difference: in Properties, not in Paths(Category: '%s', Section: '%s'):\n"),
+					*CategoryDisplayName.ToString(), *SectionDisplayName.ToString()));
 				for (FString& Diff : InPropNotInPath)
 				{
 					FString PropertyCategoryName = PropertyMap[Diff]->GetMetaData(TEXT("Category"));
@@ -280,19 +284,19 @@ void FPropertyHolder::LogAllProperties()
 						FName::NameToDisplayString(PropertyCategoryName, false)).ToString();
 
 					WriteLog(FString::Printf(
-						         TEXT("				'%s', Display name: '%s', PropertyCategory: '%s'\n"), *Diff,
-						         *PropertyMap[Diff]->GetDisplayNameText().ToString(), *DisplayPropertyCategoryName), 2);
+						TEXT("				'%s', Display name: '%s', PropertyCategory: '%s'\n"), *Diff,
+						*PropertyMap[Diff]->GetDisplayNameText().ToString(), *DisplayPropertyCategoryName));
 				}
 			}
 		}
 	}
 }
 
-void FPropertyHolder::WriteLog(const FString& Text, int LogNumber, bool IsAppend)
+void FPropertyHolder::WriteLog(const FString& Text, bool IsAppend)
 {
 	FString FileLog =
-		TEXT(R"(C:\Projects\UnrealEngineProjects\ExampleProject\ExampleProject\Plugins\ExamplePlugin\Resources\Log_)") +
-		FString::FromInt(LogNumber) + ".txt";
+		TEXT(
+			R"(C:\Projects\UnrealEngineProjects\ExampleProject\ExampleProject\Plugins\ExamplePlugin\Resources\PropertyLog.txt)");
 	FFileHelper::SaveStringToFile(Text, *FileLog, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
 	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
 }

@@ -43,7 +43,7 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 			+ SVerticalBox::Slot()
 			.FillHeight(1)
 			[
-				SAssignNew(InnerWidget, SSearchEverywhereWidget, SearcherArgument)
+				SAssignNew(InnerWidget, SSearchEverywhereWidget, SharedThis(this), SearcherArgument)
 			]
 		]
 	);
@@ -68,7 +68,7 @@ void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 	FString t1 = PreviousFocusPath.ToWidgetPathRef()->ToString();
 	FString t2 = NewWidgetPath.ToString();
 
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging PrevPath: %s NewPat %s"), *t1, *t2);
+	// UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging PrevPath: %s NewPat %s"), *t1, *t2);
 	SWindow::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
 	if (NewWidgetPath.ContainsWidget(SharedThis(this)))
 		// todo change only for this window in path

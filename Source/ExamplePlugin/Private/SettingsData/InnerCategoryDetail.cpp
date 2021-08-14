@@ -13,29 +13,14 @@ FInnerCategoryDetail::FInnerCategoryDetail(FProperty* Property,
 		FName::NameToDisplayString(Property->GetMetaData(TEXT("Category")), false));
 }
 
-TSharedRef<SWidget> FInnerCategoryDetail::GetRowWidget()
-{
-	if (!RowWidget.IsValid())
-	{
-		CreateRowWidget();
-	}
-	return RowWidget.ToSharedRef();
-}
-
-FText FInnerCategoryDetail::GetDisplayName()
+FText FInnerCategoryDetail::GetDisplayName() const
 {
 	return CategoryDisplayName;
 }
 
-void FInnerCategoryDetail::CreateRowWidget()
+void FInnerCategoryDetail::DoAction() const
 {
-	SAssignNew(RowWidget, SButton)
-		.Text(GetDisplayName())
-		.OnClicked_Lambda([this]()
-	                              {
-		                              SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
-			                              FName("Editor"), FName(  SectionDetail->CategoryDetail->GetDisplayName().ToString()),
-			                              FName(SectionDetail->GetDisplayName().ToString()));
-		                              return FReply::Handled();
-	                              });
+	SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
+										FName("Editor"), FName(  SectionDetail->CategoryDetail->GetDisplayName().ToString()),
+										FName(SectionDetail->GetDisplayName().ToString()));
 }

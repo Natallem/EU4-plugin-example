@@ -16,27 +16,36 @@
 // #include "SourceCodeAccess/Private/SourceCodeAccessSettings.h"
 #include "Widgets/SWindow.h"
 #include "Classes/EditorStyleSettings.h"
+#include "Framework/Application/SlateApplication.h"
 #include "SettingsData/PropertyHolder.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
 #include "PropertyEditor/Private/SDetailsView.h"
+#include "SettingsData/AbstractSettingDetail.h"
 #include "Widgets/Input/SEditableText.h"
 #include "Templates/SharedPointer.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
-void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<FSearcher> SearcherArgument)
+void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWindow> InParentWindow,
+                                        TSharedRef<FSearcher> SearcherArgument)
 {
 	Searcher = SearcherArgument;
+	ParentWindow = InParentWindow;
 	ListView = SNew(SListViewWidget)
 		.IsFocusable(true)
 		.ItemHeight(64)
 		.SelectionMode(ESelectionMode::None)
 		.ListItemsSource(&StringItems)
 		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget)
-		.OnMouseButtonClick_Lambda([this](FListItemPtr Item)
+		.OnMouseButtonClick_Lambda([this](FListItemPtr InItem)
 	                                {
-		                                StaticCastSharedPtr<SWindow>(GetParentWidget())->RequestDestroyWindow();
-	                                });
+		                                PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
+		                                UE_LOG(LogTemp, Log, TEXT("EP : OnMouseButtonClick_Lambda Close"));
+ParentWindow->RequestDestroyWindow();
+		                                // FSlateApplication::Get().RequestDestroyWindow(ParentWindow.ToSharedRef());
+		                                // StaticCastSharedPtr<SWindow>(GetParentWidget())->RequestDestroyWindow();
+	                                })
+	.SelectionMode(ESelectionMode::Single);
 
 
 	ListTableWidget = SNew(SVerticalBox)
@@ -204,7 +213,7 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 	TSharedPtr<SWidget> InnerWidget = ShowMoreResultsButton;
 	if (InItem->IsSet())
 	{
-		InnerWidget = PropertyHolder.GetPropertyWidgetForIndex(InItem->GetValue());
+		InnerWidget = PropertyHolder.GetSettingDetail(InItem->GetValue())->GetRowWidget();
 		// InnerWidget = SNew(STextBlock)
 		// .Text(FText::FromString(*InItem->GetValue()));
 	}

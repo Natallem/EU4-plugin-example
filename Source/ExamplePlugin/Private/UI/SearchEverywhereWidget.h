@@ -21,7 +21,7 @@ public:
 		}
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, TSharedRef<class FSearcher> Searcher);
+	void Construct(const FArguments& InArgs, TSharedRef<SWindow> InParentWindow, TSharedRef<class FSearcher> Searcher);
 
 	void UpdateShownResults();
 protected:
@@ -51,4 +51,5 @@ private:
 	TSharedPtr<SWidget> ListTableWidget;
 	bool ShouldCleanList = false;
 	FPropertyHolder& PropertyHolder = FPropertyHolder::Get();
+	TSharedPtr<SWindow> ParentWindow;
 };

@@ -1,23 +1,21 @@
 #pragma once
-#include "ISettingDetail.h"
+
 #include "CoreMinimal.h"
+#include "AbstractSettingDetail.h"
 
 class SWidget;
 class FProperty;
 class FSectionDetail;
 
-class FInnerCategoryDetail : public ISettingDetail
+class FInnerCategoryDetail : public FAbstractSettingDetail
 {
 public:
 	FInnerCategoryDetail(FProperty* Property, const TSharedRef<FSectionDetail>& SectionDetail);
 
-	virtual TSharedRef<SWidget> GetRowWidget() override;
-	virtual FText GetDisplayName() override;
+	virtual FText GetDisplayName() const override;
+	virtual void DoAction() const override;
 
 	TSharedRef<FSectionDetail> SectionDetail;
 private:
 	FText CategoryDisplayName;
-	TSharedPtr<SWidget> RowWidget;
-
-	void CreateRowWidget();
 };
