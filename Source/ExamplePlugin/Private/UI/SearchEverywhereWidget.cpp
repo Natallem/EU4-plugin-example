@@ -153,32 +153,6 @@ FText SSearchEverywhereWidget::GetCurrentSearchRequest() const
 	return SearchEditableText->GetText();
 }
 
-void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
-                                              const FWidgetPath& NewWidgetPath)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusChanging"));
-
-	SCompoundWidget::OnFocusChanging(PreviousFocusPath, NewWidgetPath);
-}
-
-FReply SSearchEverywhereWidget::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusReceived"));
-
-	return SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
-}
-
-void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusLost"));
-	SCompoundWidget::OnFocusLost(InFocusEvent);
-}
-
-FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
-{
-	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
-}
-
 EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
 {
 	if (SearchEditableText.IsValid())
@@ -249,7 +223,7 @@ void SSearchEverywhereWidget::CycleSelection(bool bIsMoving, bool bIsDownMoving)
 
 	if (bIsMoving)
 	{
-		const int64 NewIndex = SelectedListViewItemIndex + ((bIsDownMoving) ? 1 : -1);
+		const int64 NewIndex = SelectedListViewItemIndex + (bIsDownMoving ? 1 : -1);
 		if (NewIndex < 0 || NewIndex >= ItemsSource.Num())
 		{
 			return;

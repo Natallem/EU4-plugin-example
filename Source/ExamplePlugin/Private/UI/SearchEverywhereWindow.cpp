@@ -1,9 +1,9 @@
 #include "SearchEverywhereWindow.h"
 
-#include "SearchEverywhereWidget.h"
 #include "Interfaces/IMainFrameModule.h"
 #include "Layout/WidgetPath.h"
 
+#include "SearchEverywhereWidget.h"
 
 void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
                                         TWeakPtr<SWidget> InPreviousFocusedWidget)
@@ -13,9 +13,9 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
 	const TSharedPtr<SWindow> MainFrameWindow = IMainFrameModule::Get().GetParentWindow();
 	const FVector2D ParentScreenSize = MainFrameWindow->GetSizeInScreen();
 	const float ParentDPIScaleFactor = MainFrameWindow->GetDPIScaleFactor();
-	const float ScaleWindow = 0.75f;
-	const float MinWidth = 500;
-	const float MinHeight = 400;
+	constexpr float ScaleWindow = 0.75f;
+	constexpr float MinWidth = 500;
+	constexpr float MinHeight = 400;
 	const float PartialParentWidth = round(ParentScreenSize.X / ParentDPIScaleFactor * ScaleWindow);
 	const float PartialParentHeight = round(ParentScreenSize.Y / ParentDPIScaleFactor * ScaleWindow);
 	const FVector2D WindowSize = FVector2D(FMath::Max(PartialParentWidth, MinWidth),
@@ -47,45 +47,10 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
 	}));
 }
 
-
-FReply SSearchEverywhereWindow::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusReceived"));
-	return FReply::Handled();
-}
-
-
 void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
                                               const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
 {
-	FString t1 = PreviousFocusPath.ToWidgetPathRef()->ToString();
-	FString t2 = NewWidgetPath.ToString();
-
-	// UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging PrevPath: %s NewPat %s"), *t1, *t2);
-	SWindow::OnFocusChanging(PreviousFocusPath, NewWidgetPath, InFocusEvent);
-	if (NewWidgetPath.ContainsWidget(SharedThis(this)))
-		// todo change only for this window in path
-	{
-		bNeedToClose = false;
-		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging contains inner"));
-	}
-	else
-	{
-		bNeedToClose = true;
-		UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusChanging NOT contains inner"));
-	}
-	// bNeedToClose = !NewWidgetPath.ContainsWidget(InnerWidget.ToSharedRef());
-	if (bNeedToClose)
-	{
-		RequestDestroyWindow();
-	}
-}
-
-void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
-	SWindow::OnFocusLost(InFocusEvent);;
-	if (bNeedToClose)
+	if (!NewWidgetPath.ContainsWidget(SharedThis(this)))
 	{
 		RequestDestroyWindow();
 	}
@@ -98,6 +63,7 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 		if (InKeyEvent.GetKey() == EKeys::Escape)
 		{
 			RequestDestroyWindow();
+			return FReply::Handled();
 		}
 		if (ParentModule.PluginCommands->ProcessCommandBindings(InKeyEvent))
 		{
@@ -114,11 +80,6 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 		return FReply::Unhandled();
 	}
 	return FReply::Handled();
-}
-
-FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
-{
-	return SWindow::OnKeyUp(MyGeometry, InKeyEvent);
 }
 
 bool SSearchEverywhereWindow::SupportsKeyboardFocus() const

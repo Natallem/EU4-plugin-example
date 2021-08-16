@@ -36,11 +36,6 @@ public:
 	void UpdateShownResults();
 	virtual bool SupportsKeyboardFocus() const override;
 	FText GetCurrentSearchRequest() const;
-protected:
-	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
-	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath) override;
-	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
-	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 private:
 	EActiveTimerReturnType SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const;
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,

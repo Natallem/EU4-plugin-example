@@ -1,9 +1,10 @@
 #pragma once
-#include "ExamplePluginModule.h"
+
 #include "Widgets/SWindow.h"
 
-class FUICommandList;
+#include "ExamplePluginModule.h"
 
+class FUICommandList;
 class SSearchEverywhereWidget;
 
 class SSearchEverywhereWindow final : public SWindow
@@ -25,14 +26,10 @@ public:
 
 	void Construct(const FArguments& InArgs, TWeakPtr<SWidget> InPreviousFocusedWidget);
 
-	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
 	                             const FFocusEvent& InFocusEvent) override;
-	virtual void OnFocusLost(const FFocusEvent& InFocusEvent) override;
 
-	// todo delete, do nothing
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
-	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 
 	virtual bool SupportsKeyboardFocus() const override;
 
