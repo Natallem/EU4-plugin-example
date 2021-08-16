@@ -162,11 +162,8 @@ bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPatte
 	return false;
 }
 
-void FPropertyHolder::LogAllProperties()
+void FPropertyHolder::LogAllProperties() const
 {
-	// ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
-
-	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 	FDetailsViewArgs DetailsViewArgs;
 	DetailsViewArgs.bShowDifferingPropertiesOption = true;
 	DetailsViewArgs.bShowModifiedPropertiesOption = true;
@@ -211,7 +208,6 @@ void FPropertyHolder::LogAllProperties()
 			WriteLog(FString::Printf(
 				TEXT("	SectionDisplayName: '%s',SectionName: '%s', SectionDescription: '%s'\n"),
 				*SectionDisplayName.ToString(), *SectionName.ToString(), *SectionDescription.ToString()));
-			// continue;
 			FText PropertyDisplayName;
 			TSet<FString> PropValues;
 			TSet<FString> PathValues;

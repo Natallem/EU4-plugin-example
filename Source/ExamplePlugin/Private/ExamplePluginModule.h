@@ -9,27 +9,29 @@
 struct FKeyEvent;
 class FToolBarBuilder;
 class FMenuBuilder;
+class FUICommandList;
+class SSearchEverywhereWindow;
 
-class FExamplePluginModule final : public IModuleInterface,
-                                   public TSharedFromThis<FExamplePluginModule, ESPMode::ThreadSafe>
+class FExamplePluginModule final : public IModuleInterface
 {
 public:
-	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	/** This function will be bound to Command (by default it will bring up plugin window) */
 	void PluginButtonClicked();
 	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
+
 private:
+	friend SSearchEverywhereWindow;
 	uint32 LastKeyboardUser = 0;
 	FKey LastKeyboardUserInput;
-	TSharedPtr<class FUICommandList> PluginCommands;
-	TWeakPtr<class SSearchEverywhereWindow> ExamplePluginWindow; // todo maybe not import but declaration
+	TSharedPtr<FUICommandList> PluginCommands;
+	TWeakPtr<SSearchEverywhereWindow> PluginWindow;
+	FText PreviousSearchRequest;
 	FDelegateHandle OnApplicationPreInputKeyDownListenerHandle;
-	const static int32 ResultChunkSize = 100;
+	constexpr static int32 ResultChunkSize = 100; // todo change
 	TSharedRef<FCallbackHandler, ESPMode::ThreadSafe> CallbackHandler = MakeShared<
-		FCallbackHandler, ESPMode::ThreadSafe>(ExamplePluginWindow);
+		FCallbackHandler, ESPMode::ThreadSafe>(PluginWindow);
 	TSharedRef<FSearcher> Searcher = MakeShared<FSearcher>(ResultChunkSize,
 	                                                       CallbackHandler->GetMessageEndpoint());
 };

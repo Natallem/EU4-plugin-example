@@ -3,51 +3,20 @@
 #include "EditorStyleSet.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Multithreading/Searcher.h"
-// #include "SettingsData/PropertyHolder.h"
 #include "SettingsData/AbstractSettingDetail.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Input/SEditableText.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Layout/SScrollBorder.h"
 #include "Widgets/SWindow.h"
+#include "SearchEverywhereWindow.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
-void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWindow> InParentWindow,
-                                        TSharedRef<FSearcher> SearcherArgument)
+void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSearchEverywhereWindow> InParentWindow)
 {
-	Searcher = SearcherArgument;
 	ParentWindow = InParentWindow;
-	ListView = SNew(SListViewWidget)
-		// .IsFocusable(true)
-		.ItemHeight(64)
-		.ListItemsSource(&ItemsSource)
-		.SelectionMode(ESelectionMode::Single)
-		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget)
-		.OnMouseButtonClick_Lambda([this](FListItemPtr InItem)
-	                                {
-		                                if (InItem->IsSet())
-		                                {
-			                                PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
-			                                ParentWindow->RequestDestroyWindow();
-		                                }
-	                                });
-
-
-	ListTableWidget = SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.FillHeight(1.0f)
-		[
-			SNew(SScrollBorder, ListView.ToSharedRef())
-			[
-				ListView.ToSharedRef()
-			]
-		];
-
-	SAssignNew(ShowMoreResultsButton, SButton)
-			.Text(LOCTEXT("ShowMoreResultsButtonText", "More ..."))
-			.Visibility(EVisibility::Visible)
-			.OnClicked(this, &SSearchEverywhereWidget::OnButtonShowMoreResultsClicked);
+	Searcher = ParentWindow->GetSearcher();
 
 	const TSharedRef<SWidget> TabsWidget = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -63,7 +32,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWi
 		[
 			SNew(SButton)
 			.Text(LOCTEXT("LogAllPropertiesButtonText", "Log all properties"))
-			.OnClicked(this, &SSearchEverywhereWidget::GetAllProperties)
+			.OnClicked_Static(&SSearchEverywhereWidget::LogAllProperties)
 		];
 
 	const TSharedRef<SWidget> SearchTableWidget =
@@ -73,13 +42,49 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWi
 		  .FillWidth(1.0f)
 		[
 			SAssignNew(SearchEditableText, SEditableText)
-			.RevertTextOnEscape(true)
-			.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
-			.SelectAllTextWhenFocused(true)
+			.Text(InArgs._PreviousSearchRequest)
 			.HintText(LOCTEXT("SearchEditableTextHint", "Type here ..."))
+			.OnKeyDownHandler(this, &SSearchEverywhereWidget::OnSearchTextKeyDown)
+			.OnTextChanged(this, &SSearchEverywhereWidget::OnTextChanged)
+			.OnTextCommitted(this, &SSearchEverywhereWidget::OnTextCommit)
+			.SelectAllTextWhenFocused_Lambda([this]()-> bool
+			{
+				const bool ShouldSelectText = bIsFirstFocusActivate;
+				if (bIsFirstFocusActivate)
+				{
+					if (!SearchEditableText->GetText().IsEmpty())
+					{
+						OnTextChanged(SearchEditableText->GetText());
+					}
+					bIsFirstFocusActivate = false;
+				}
+				return ShouldSelectText;
+			})
+
 		];
+
 	RegisterActiveTimer(
 		0.f, FWidgetActiveTimerDelegate::CreateSP(this, &SSearchEverywhereWidget::SetFocusPostConstruct));
+
+	ItemsListView = SNew(SListViewWidget)
+		.ItemHeight(64)
+		.ListItemsSource(&ItemsSource)
+		.SelectionMode(ESelectionMode::Single)
+		.OnGenerateRow(this, &SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget)
+		.OnSelectionChanged(this, &SSearchEverywhereWidget::OnListSelectionChanged)
+		.OnMouseButtonClick(this, &SSearchEverywhereWidget::OnSelectItem);
+
+	ListTableWidget = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SScrollBorder, ItemsListView.ToSharedRef())
+			[
+				ItemsListView.ToSharedRef()
+			]
+		];
+	SAssignNew(ShowMoreResultsItem, STextBlock)
+		.Text(LOCTEXT("ShowMoreResultsItemText", "More ..."));
 
 	ChildSlot
 	[
@@ -110,15 +115,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SWi
 			]
 		]
 	];
-}
-
-EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
-{
-	if (SearchEditableText.IsValid())
-	{
-		FSlateApplication::Get().SetKeyboardFocus(SearchEditableText.ToSharedRef(), EFocusCause::SetDirectly);
-	}
-	return EActiveTimerReturnType::Stop;
+	CycleSelection();
 }
 
 void SSearchEverywhereWidget::UpdateShownResults()
@@ -142,7 +139,8 @@ void SSearchEverywhereWidget::UpdateShownResults()
 	{
 		ItemsSource.Add(MakeShared<TOptional<RequiredType>>());
 	}
-	ListView->RebuildList();
+	ItemsListView->RebuildList();
+	CycleSelection();
 }
 
 bool SSearchEverywhereWidget::SupportsKeyboardFocus() const
@@ -150,39 +148,10 @@ bool SSearchEverywhereWidget::SupportsKeyboardFocus() const
 	return true;
 }
 
-FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+FText SSearchEverywhereWidget::GetCurrentSearchRequest() const
 {
-	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
+	return SearchEditableText->GetText();
 }
-
-void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
-{
-	ShouldCleanList = true; //todo maybe just clean?
-	Searcher->SetInput(Filter.ToString());
-}
-
-FReply SSearchEverywhereWidget::OnButtonShowMoreResultsClicked() const
-{
-	if (ShowMoreResultsButton->GetVisibility() == EVisibility::Visible)
-	{
-		Searcher->FindMoreDataResult();
-	}
-	return FReply::Handled(); // todo or unhandled?
-}
-
-void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusLost"));
-	SCompoundWidget::OnFocusLost(InFocusEvent);
-}
-
-FReply SSearchEverywhereWidget::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusReceived"));
-
-	return SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
-}
-
 
 void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath,
                                               const FWidgetPath& NewWidgetPath)
@@ -192,38 +161,131 @@ void SSearchEverywhereWidget::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 	SCompoundWidget::OnFocusChanging(PreviousFocusPath, NewWidgetPath);
 }
 
+FReply SSearchEverywhereWidget::OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent)
+{
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusReceived"));
+
+	return SCompoundWidget::OnFocusReceived(MyGeometry, InFocusEvent);
+}
+
+void SSearchEverywhereWidget::OnFocusLost(const FFocusEvent& InFocusEvent)
+{
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWidget OnFocusLost"));
+	SCompoundWidget::OnFocusLost(InFocusEvent);
+}
+
+FReply SSearchEverywhereWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+{
+	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
+}
+
+EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
+{
+	if (SearchEditableText.IsValid())
+	{
+		FSlateApplication::Get().SetKeyboardFocus(SearchEditableText.ToSharedRef(), EFocusCause::SetDirectly);
+	}
+	return EActiveTimerReturnType::Stop;
+}
+
+void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
+{
+	ShouldCleanList = true; //todo maybe just clean?
+	Searcher->SetInput(Filter.ToString());
+}
+
+void SSearchEverywhereWidget::OnTextCommit(const FText& CommittedText, ETextCommit::Type CommitType) const
+{
+	if (CommitType == ETextCommit::OnEnter && ItemsListView->GetNumItemsSelected() != 0)
+	{
+		OnSelectItem(ItemsListView->GetSelectedItems()[0]);
+	}
+}
+
+FReply SSearchEverywhereWidget::OnSearchTextKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+{
+	UE_LOG(LogTemp, Log, TEXT("EP : OnSearchTextKeyDown %s"), *InKeyEvent.GetKey().ToString());
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		ParentWindow->RequestDestroyWindow();
+		return FReply::Handled();
+	}
+	if (InKeyEvent.GetKey() == EKeys::Up || InKeyEvent.GetKey() == EKeys::Down)
+	{
+		CycleSelection(true, InKeyEvent.GetKey() == EKeys::Down);
+		return FReply::Handled();
+	}
+	return FReply::Unhandled();
+}
 
 TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
-	const TSharedRef<STableViewBase>& OwnerTable)
+	const TSharedRef<STableViewBase>& OwnerTable) const
 {
-	TSharedPtr<SWidget> InnerWidget = ShowMoreResultsButton;
-	if (InItem->IsSet())
-	{
-		InnerWidget = PropertyHolder.GetSettingDetail(InItem->GetValue())->GetRowWidget();
-		// InnerWidget = SNew(STextBlock)
-		// .Text(FText::FromString(*InItem->GetValue()));
-	}
 	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		[
-			InnerWidget.ToSharedRef()
+			InItem->IsSet()
+				? PropertyHolder.GetSettingDetail(InItem->GetValue())->GetRowWidget()
+				: ShowMoreResultsItem.ToSharedRef()
 		]
 	];
 }
 
-FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCategoryName, FName InSectionName)
+void SSearchEverywhereWidget::OnListSelectionChanged(FListItemPtr InItem, ESelectInfo::Type SelectInfo)
 {
-	SettingsModule.ShowViewer(InContainerName, InCategoryName, InSectionName);
+	SelectedListViewItemIndex = ItemsSource.Find(InItem);
+}
+
+void SSearchEverywhereWidget::CycleSelection(bool bIsMoving, bool bIsDownMoving)
+{
+	if ((ItemsListView->GetNumItemsSelected() == 0) && (ItemsSource.Num() > 0))
+	{
+		SelectedListViewItemIndex = 0;
+		ItemsListView->SetSelection(ItemsSource[SelectedListViewItemIndex]);
+		return;
+	}
+
+	if (bIsMoving)
+	{
+		const int64 NewIndex = SelectedListViewItemIndex + ((bIsDownMoving) ? 1 : -1);
+		if (NewIndex < 0 || NewIndex >= ItemsSource.Num())
+		{
+			return;
+		}
+		SelectedListViewItemIndex = NewIndex;
+		const FListItemPtr& NewSelectedItem = ItemsSource[SelectedListViewItemIndex];
+		ItemsListView->SetSelection(NewSelectedItem);
+		ItemsListView->RequestScrollIntoView(NewSelectedItem);
+	}
+}
+
+void SSearchEverywhereWidget::OnSelectItem(FListItemPtr InItem) const
+{
+	if (InItem->IsSet())
+	{
+		PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
+		ParentWindow->RequestDestroyWindow();
+	}
+	else
+	{
+		Searcher->FindMoreDataResult();
+		SetFocusPostConstruct(0.0, 0.f);
+	}
+}
+
+FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCategoryName, FName InSectionName) const
+{
+	FModuleManager::LoadModuleChecked<ISettingsModule>("Settings").ShowViewer(
+		InContainerName, InCategoryName, InSectionName);
 	return FReply::Handled();
 }
 
-FReply SSearchEverywhereWidget::GetAllProperties()
+FReply SSearchEverywhereWidget::LogAllProperties()
 {
-	FPropertyHolder::LogAllProperties();
+	FPropertyHolder::Get().LogAllProperties();
 	return FReply::Handled();
 }
-
 
 #undef LOCTEXT_NAMESPACE

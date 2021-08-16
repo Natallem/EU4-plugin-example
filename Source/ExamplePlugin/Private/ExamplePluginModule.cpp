@@ -30,7 +30,6 @@ void FExamplePluginModule::StartupModule()
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
-	FPropertyHolder::LogAllProperties();
 	//todo add to asset editor
 	// Searcher->OnNewDataFound().BindThreadSafeSP(CallbackHandler, &FCallbackHandler::OnCallback); //todo maybe bind static
 }
@@ -51,11 +50,9 @@ void FExamplePluginModule::ShutdownModule()
 
 void FExamplePluginModule::PluginButtonClicked()
 {
-	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = ExamplePluginWindow.Pin();
+	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = PluginWindow.Pin();
 	if (ExistingWindow.IsValid() && ExistingWindow->IsActive())
 	{
-		bool t = ExistingWindow->IsActive();
-		
 		UE_LOG(LogTemp, Log, TEXT("EP : Bring to front window"));
 		ExistingWindow->BringToFront();
 	}
@@ -64,10 +61,12 @@ void FExamplePluginModule::PluginButtonClicked()
 		UE_LOG(LogTemp, Log, TEXT("EP : Created new window"));
 		TWeakPtr<SWidget> PreviousFocusedUserWidget = FSlateApplication::Get().GetUser(LastKeyboardUser)->
 		                                                                       GetFocusedWidget();
-		ExistingWindow = SNew(SSearchEverywhereWindow, PreviousFocusedUserWidget, PluginCommands, Searcher);
+		ExistingWindow =
+			SNew(SSearchEverywhereWindow, PreviousFocusedUserWidget)
+			.PreviousSearchRequest(PreviousSearchRequest);
 		FSlateApplication::Get().AddWindow(ExistingWindow.ToSharedRef());
 	}
-	ExamplePluginWindow = ExistingWindow;
+	PluginWindow = ExistingWindow;
 }
 
 void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent)
@@ -82,8 +81,6 @@ void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent&
 		LastKeyboardUserInput = InKeyEvent.GetKey();
 	}
 }
-
-
 
 #undef LOCTEXT_NAMESPACE
 

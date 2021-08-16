@@ -25,14 +25,6 @@ public:
 protected:
 	virtual TSharedPtr<SWidget> CreateRowWidget() const
 	{
-		// return SNew(SButton)
-		// .Text(GetDisplayName())
-		// .OnClicked_Lambda([this]()->FReply
-		// {
-			// DoAction();
-			// return FReply::Unhandled();
-		// });
-		
 		return SNew(STextBlock)
 			.Text(GetDisplayName());
 	}

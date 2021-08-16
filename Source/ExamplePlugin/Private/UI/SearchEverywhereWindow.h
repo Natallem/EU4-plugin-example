@@ -1,43 +1,29 @@
 #pragma once
+#include "ExamplePluginModule.h"
 #include "Widgets/SWindow.h"
 
 class FUICommandList;
 
-enum ESearchModeTab
-{
-	/** todo comment */
-	All,
-	/** todo comment */
-	Classes,
-};
+class SSearchEverywhereWidget;
 
 class SSearchEverywhereWindow final : public SWindow
 {
 public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWindow)
-			: _Type(ESearchModeTab::All)
-			  , _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
-			  , _SearchRequest()
+			:  _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
+			  , _PreviousSearchRequest()
 		{
 		}
-
-		/** Type of this window */
-		SLATE_ARGUMENT(ESearchModeTab, Type)
 
 		/** Style used to draw this window */
 		SLATE_STYLE_ARGUMENT(FWindowStyle, Style)
 
-		/** Title of the window */
-		SLATE_ATTRIBUTE(FText, SearchRequest)
+		/** Search request in last closed SearchEverywhereWindow */
+		SLATE_ARGUMENT(FText, PreviousSearchRequest)
 	SLATE_END_ARGS()
 
-	virtual bool SupportsKeyboardFocus() const override;
 
-	TWeakPtr<SWidget> PreviousFocusedWidget;
-	TSharedPtr<FUICommandList> PluginCommandList;
-	TSharedPtr<class SSearchEverywhereWidget> InnerWidget; // todo specify? to SSearchWindow
-	void Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
-	               TSharedPtr<FUICommandList> NewPluginCommandList, TSharedRef<class FSearcher> Searcher);
+	void Construct(const FArguments& InArgs, TWeakPtr<SWidget> InPreviousFocusedWidget);
 
 	virtual FReply OnFocusReceived(const FGeometry& MyGeometry, const FFocusEvent& InFocusEvent) override;
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
@@ -48,8 +34,13 @@ public:
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 
-	void UpdateShownResults();
+	virtual bool SupportsKeyboardFocus() const override;
+
+	TSharedPtr<SSearchEverywhereWidget> GetSearchEverywhereWidget() const;
+	TSharedRef<FSearcher> GetSearcher() const;
 private:
-	TSharedPtr<FSearcher> Searcher;
+	FExamplePluginModule& ParentModule = FModuleManager::GetModuleChecked<FExamplePluginModule>(TEXT("ExamplePlugin"));
+	TWeakPtr<SWidget> PreviousFocusedWidget;
+	TSharedPtr<SSearchEverywhereWidget> InnerWidget;
 	bool bNeedToClose = true;
 };

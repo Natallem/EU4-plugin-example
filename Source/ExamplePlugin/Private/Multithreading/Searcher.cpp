@@ -46,7 +46,6 @@ uint32 FSearcher::Run()
 	{
 		if (!bIsInputChangedDuringSearching)
 		{
-			UE_LOG(LogTemp, Log, TEXT("EP : FSearcher waiting"));
 			WakeUpWorkerEvent->Wait(); //todo need to check before in need to find more answers 
 		}
 		else
@@ -77,7 +76,6 @@ uint32 FSearcher::Run()
 				}
 			}
 		}
-		UE_LOG(LogTemp, Log, TEXT("EP : FSearcher got a task"));
 		if (FindResultTask.IsSet())
 		{
 			bIsInputChangedDuringSearching =
@@ -94,7 +92,6 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 	if (FindResultTask.PArray.Num() == 0)
 	{
 		FindResultTask.PArray = FPropertyHolder::CreatePArray(FindResultTask.Request);
-		UE_LOG(LogTemp, Log, TEXT("EP : FSearcher calculated p-array"));
 	}
 	while (FindResultTask.DesiredResultSize > 0)
 	{
@@ -104,16 +101,11 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 			--FindResultTask.DesiredResultSize;
 			if (!AddFoundItemToResult(MoveTemp(FoundWord.GetValue()), FindResultTask.TaskId))
 			{
-				UE_LOG(LogTemp, Log, TEXT("EP : FSearcher couldn't add a found word"));
 				return true;
 			}
-
-			UE_LOG(LogTemp, Log, TEXT("EP : FSearcher added a found word"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("EP : FSearcher not found word"));
-
 			// input changed -> skip waiting
 			// finished searching -> notify main thread but do not need to skip waiting
 			if (!FindResultTask.bIsCompleteSearching || FindResultTask.bIsCompleteSearching && !AllWordsFound(
@@ -201,12 +193,13 @@ bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 			}
 			else
 			{
-				/*for (int i = 0; i < Task.Buffer.Num(); ++i)
+				/* todo check that move operator for array elements call 
+				 * 
+				for (int i = 0; i < Task.Buffer.Num(); ++i)
 				{
 					Result.Buffer.Add(MoveTemp(Task.Buffer[i]));
 				}*/
 				// Task.Buffer.Reset();// todo maybe no need to reset?
-				//todo check that move operator call
 				Result.Buffer.Append(MoveTemp(Task.Buffer));
 			}
 		}
@@ -215,9 +208,7 @@ bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 	return false;
 }
 
-/** Called only with Lock
- *
- */
+/** Calls in locked object */
 void FSearcher::NotifyMainThread()
 {
 	if (!IsNotifiedMainThread)
@@ -235,7 +226,6 @@ TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
 	TArray<RequiredType> ReturnResult;
 	bool bIsSearchingFinished;
 	{
-		UE_LOG(LogTemp, Log, TEXT("EP : FSearcher returning found result"));
 		FScopeLock ScopeLock(&InputOperationSection);
 		ensureAlways(RequestCounter.GetValue() == Result.Id);
 		ReturnResult = MoveTemp(Result.ResultToGive);

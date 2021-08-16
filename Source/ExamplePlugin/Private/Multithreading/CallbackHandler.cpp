@@ -3,6 +3,7 @@
 #include "MessageEndpoint.h"
 #include "MessageEndpointBuilder.h"
 #include "UI/SearchEverywhereWindow.h"
+#include "UI/SearchEverywhereWidget.h"
 
 FCallbackHandler::FCallbackHandler(TWeakPtr<SSearchEverywhereWindow>& WindowToPassResult): WindowToPassResult(
 	WindowToPassResult)
@@ -27,6 +28,6 @@ void FCallbackHandler::HandleFoundWords(const FWordsFound& Message,
 	TSharedPtr<SSearchEverywhereWindow> Window = WindowToPassResult.Pin();
 	if (Window.IsValid())
 	{
-		Window->UpdateShownResults();
+		Window->GetSearchEverywhereWidget()->UpdateShownResults();
 	}
 }

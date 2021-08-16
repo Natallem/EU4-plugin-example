@@ -4,32 +4,20 @@
 #include "Interfaces/IMainFrameModule.h"
 #include "Layout/WidgetPath.h"
 
-bool SSearchEverywhereWindow::SupportsKeyboardFocus() const
-{
-	return InnerWidget->SupportsKeyboardFocus();
-}
 
-void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidget> NewPreviousFocusedWidget,
-                                        TSharedPtr<FUICommandList> NewPluginCommandList,
-                                        TSharedRef<FSearcher> SearcherArgument)
+void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
+                                        TWeakPtr<SWidget> InPreviousFocusedWidget)
 {
-	Searcher = SearcherArgument;
-	PreviousFocusedWidget = NewPreviousFocusedWidget;
-	PluginCommandList = NewPluginCommandList;
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow Construct"));
+	PreviousFocusedWidget = InPreviousFocusedWidget;
+	
 	const TSharedPtr<SWindow> MainFrameWindow = IMainFrameModule::Get().GetParentWindow();
 	const FVector2D ParentScreenSize = MainFrameWindow->GetSizeInScreen();
 	const float ParentDPIScaleFactor = MainFrameWindow->GetDPIScaleFactor();
 	const float ScaleWindow = 0.75f;
 	const float MinWidth = 500;
 	const float MinHeight = 400;
-
-	// size of window should be a multiple of 10 todo 
 	const float PartialParentWidth = round(ParentScreenSize.X / ParentDPIScaleFactor * ScaleWindow);
-
-	// size of window should be a multiple of 10 todo
 	const float PartialParentHeight = round(ParentScreenSize.Y / ParentDPIScaleFactor * ScaleWindow);
-
 	const FVector2D WindowSize = FVector2D(FMath::Max(PartialParentWidth, MinWidth),
 	                                       FMath::Max(PartialParentHeight, MinHeight));
 
@@ -48,14 +36,14 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs, TWeakPtr<SWidg
 			+ SVerticalBox::Slot()
 			.FillHeight(1)
 			[
-				SAssignNew(InnerWidget, SSearchEverywhereWidget, SharedThis(this), SearcherArgument)
+				SAssignNew(InnerWidget, SSearchEverywhereWidget, SharedThis(this))
+				.PreviousSearchRequest(InArgs._PreviousSearchRequest)
 			]
 		]
 	);
-	SetOnWindowClosed(FOnWindowClosed::CreateLambda([](const TSharedRef<SWindow>& Window)
+	SetOnWindowClosed(FOnWindowClosed::CreateLambda([this](const TSharedRef<SWindow>& Window)
 	{
-		// todo save state before close
-		UE_LOG(LogTemp, Log, TEXT("EP : Lambda before close"));
+		ParentModule.PreviousSearchRequest = InnerWidget->GetCurrentSearchRequest();
 	}));
 }
 
@@ -93,6 +81,16 @@ void SSearchEverywhereWindow::OnFocusChanging(const FWeakWidgetPath& PreviousFoc
 	}
 }
 
+void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
+{
+	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
+	SWindow::OnFocusLost(InFocusEvent);;
+	if (bNeedToClose)
+	{
+		RequestDestroyWindow();
+	}
+}
+
 FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
 	if (!SWindow::OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
@@ -101,13 +99,12 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 		{
 			RequestDestroyWindow();
 		}
-		if (PluginCommandList->ProcessCommandBindings(InKeyEvent))
+		if (ParentModule.PluginCommands->ProcessCommandBindings(InKeyEvent))
 		{
 			return FReply::Handled();
 		}
 
 		if (PreviousFocusedWidget.IsValid() && PreviousFocusedWidget.Pin().IsValid())
-			// Q need to create shrd_ptr in var
 		{
 			if (PreviousFocusedWidget.Pin()->OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
 			{
@@ -120,22 +117,22 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 	return FReply::Handled();
 }
 
-void SSearchEverywhereWindow::OnFocusLost(const FFocusEvent& InFocusEvent)
-{
-	UE_LOG(LogTemp, Log, TEXT("EP : SSearchEverywhereWindow OnFocusLost"));
-	SWindow::OnFocusLost(InFocusEvent);;
-	if (bNeedToClose)
-	{
-		RequestDestroyWindow();
-	}
-}
-
 FReply SSearchEverywhereWindow::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
 	return SWindow::OnKeyUp(MyGeometry, InKeyEvent);
 }
 
-void SSearchEverywhereWindow::UpdateShownResults()
+bool SSearchEverywhereWindow::SupportsKeyboardFocus() const
 {
-	InnerWidget->UpdateShownResults();
+	return InnerWidget->SupportsKeyboardFocus();
+}
+
+TSharedPtr<SSearchEverywhereWidget> SSearchEverywhereWindow::GetSearchEverywhereWidget() const
+{
+	return InnerWidget;
+}
+
+TSharedRef<FSearcher> SSearchEverywhereWindow::GetSearcher() const
+{
+	return ParentModule.Searcher;
 }

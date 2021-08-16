@@ -20,7 +20,7 @@ public:
 	TOptional<RequiredType> FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter);
 	TSharedRef<const FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
 
-	static void LogAllProperties();
+	void LogAllProperties() const;
 	static void WriteLog(const FString& Text, bool IsAppend = true);
 	static FPropertyHolder& Get();
 private:
