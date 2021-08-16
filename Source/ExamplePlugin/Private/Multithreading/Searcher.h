@@ -1,115 +1,83 @@
 #pragma once
-#include "MessageEndpoint.h"
-#include "SearchTask.h"
-#include "SettingsData/PropertyHolder.h"
-#include "Configuration.h"
+
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
 
+#include "Configuration.h"
+#include "InputHandler.h"
+#include "MessageEndpoint.h"
+#include "SearchTask.h"
+#include "SettingsData/PropertyHolder.h"
 
 template <typename T>
 class TSearchTask;
-
 class FRunnableThread;
-
-template <typename RequiredType>
-struct TInputResult
-{
-	TInputResult(int32 Id, const FString& Input, int32 DesiredResultSize, int32 DesiredBufferSize);
-
-	void MoveFromBufferToMainResult(class FSearcher& Searcher);
-
-	int32 Id;
-	FString Input;
-	int32 DesiredResultSize;
-	int32 DesiredBufferSize;
-	bool IsFinishedProcess;
-	TArray<int> PArray;
-	int32 NextIndexToCheck = 0;
-	int32 FoundResultCounter = 0;
-	TArray<RequiredType> ResultToGive;
-	TArray<RequiredType> Buffer;
-};
 
 class FSearcher : public FRunnable
 {
-public:
+private:
 	using FSearchTask = TSearchTask<RequiredType>;
-	using FInputResult = TInputResult<RequiredType>;
-
-	explicit FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint);
+	using FInputHandler = TInputHandler<RequiredType>;
+public:
+	FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint);
 
 	virtual ~FSearcher() override = default;
+
+	/** Calls before destruct searcher, stops thread and wait for it completion */
 	void EnsureCompletion();
 
 	virtual bool Init() override;
-	bool ExecuteFindResultTask(FSearchTask& Task);
-	bool FillBuffer(FSearchTask& Task);
-
 	virtual uint32 Run() override;
 	virtual void Stop() override;
 
-	TPair<bool, TArray<RequiredType>> GetRequestData();
 	void SetInput(const FString& NewInput);
+
+	/** Gives found result to main thread
+	 * @return Pair, where key indicate weather all items for input request are found, value is found result
+	 */
+	TPair<bool, TArray<RequiredType>> GetRequestData();
 	void FindMoreDataResult();
+private:
+	bool ExecuteFindResultTask(FSearchTask& Task);
+
+	/** Executes fill buffer task for processing input.
+	 * @param Task contains information about fill buffer task and buffer itself
+	 * @return true if input change while processing
+	 */
+	bool FillBuffer(FSearchTask& Task) const;
+
+	/** Saves state of task for input request, i.e. return to InputHandler request string, PArray, buffer and next index to search
+	 * @param Task completed task, which data need to be saved in InputHandler
+	 * @return true if saved successfully
+	 */
+	bool SaveTaskStateToResult(FSearchTask& Task);
+
+	/** Append found item to InputHandler output array, using lock and calling NotifyMainThread
+	 * @param Item will be given to main thread
+	 * @param TaskId Id of current task
+	 * @return true if added successfully (i.e. input does not change)
+	 */
+	bool AddFoundItemToResult(RequiredType&& Item, int32 TaskId);
+
+	/** Notify main thread, that search is completed. 
+	 * @param InputId Id of input, that was completed
+	 * @return true if completed successfully (i.e. input does not change)
+	 */
+	bool AllWordsFound(int32 InputId);
+
+	/** Send message, that new request item found. Does not notify main thread twice. Calls under lock*/
 	void NotifyMainThread();
 
-private:
-	uint32 ChunkSize;
-	FThreadSafeCounter RequestCounter;
-	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
-	FEventRef WakeUpWorkerEvent;
-	FThreadSafeBool m_Kill = false;
-	FCriticalSection InputOperationSection;
-	FInputResult Result;
 	FPropertyHolder& PropertyHolder;
-	bool IsNotifiedMainThread = false;
+	FEventRef WakeUpWorkerEvent;
+	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
+	uint32 ChunkSize;
+	FInputHandler InputHandler;
+	FThreadSafeCounter RequestCounter;
+	FCriticalSection InputOperationSection;
+	bool bIsNotifiedMainThread = false;
+	FThreadSafeBool bShouldStopThread = false;
 	TUniquePtr<FRunnableThread> Thread;
 
-	bool SaveTaskStateToResult(FSearchTask& Task);
-	bool AddFoundItemToResult(RequiredType&& Word, int32 TaskId);
-	bool AllWordsFound(int32 InputId);
+	friend FInputHandler;
 };
-
-template <typename RequiredType>
-TInputResult<RequiredType>::TInputResult(int32 Id, const FString& Input, int32 DesiredResultSize,
-                                         int32 DesiredBufferSize)
-	: Id(Id),
-	  Input(Input),
-	  DesiredResultSize(DesiredResultSize),
-	  DesiredBufferSize(DesiredBufferSize),
-	  IsFinishedProcess(Input.IsEmpty())
-{
-}
-
-/*
-*Called with mutex
-*/
-template <typename RequiredType>
-void TInputResult<RequiredType>::MoveFromBufferToMainResult(FSearcher& Searcher)
-{
-	if (DesiredResultSize > FoundResultCounter)
-	{
-		if (Buffer.Num() != 0)
-		{
-			if (ResultToGive.Num() == 0 && FoundResultCounter + Buffer.Num() < DesiredResultSize)
-			{
-				ResultToGive = MoveTemp(Buffer);
-				Buffer.Reset();
-				FoundResultCounter += ResultToGive.Num();
-				Searcher.NotifyMainThread();
-			}
-			else
-			{
-				const int32 ElementsNumber = FMath::Min(DesiredResultSize - FoundResultCounter, Buffer.Num());
-				for (int i = 0; i < ElementsNumber; ++i)
-				{
-					ResultToGive.Add(MoveTemp(Buffer[i]));
-				}
-				Buffer.RemoveAt(0, ElementsNumber, false);
-				FoundResultCounter += ElementsNumber;
-				Searcher.NotifyMainThread();
-			}
-		}
-	}
-}

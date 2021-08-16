@@ -1,6 +1,8 @@
 #pragma once
-#include "AbstractSettingDetail.h"
+
 #include "ISettingsSection.h"
+
+#include "AbstractSettingDetail.h"
 
 class FCategoryDetail;
 

@@ -1,8 +1,10 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
+
 class SWidget;
 
 class FAbstractSettingDetail

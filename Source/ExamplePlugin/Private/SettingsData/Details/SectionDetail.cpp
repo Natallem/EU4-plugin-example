@@ -1,7 +1,7 @@
 #include "SectionDetail.h"
 
-#include "ISettingsModule.h"
 #include "CategoryDetail.h"
+#include "ISettingsModule.h"
 
 FSectionDetail::FSectionDetail(const ISettingsSectionPtr& SettingsSection,
                                const TSharedRef<FCategoryDetail>& CategoryDetail)

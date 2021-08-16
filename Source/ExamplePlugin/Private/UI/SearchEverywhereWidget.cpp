@@ -190,7 +190,7 @@ EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InC
 
 void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 {
-	ShouldCleanList = true; //todo maybe just clean?
+	ShouldCleanList = true;
 	Searcher->SetInput(Filter.ToString());
 }
 

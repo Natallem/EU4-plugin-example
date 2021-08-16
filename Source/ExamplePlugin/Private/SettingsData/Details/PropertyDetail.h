@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AbstractSettingDetail.h"
-#include "ISettingsSection.h"
 
 class ISettingsModule;
 class FInnerCategoryDetail;

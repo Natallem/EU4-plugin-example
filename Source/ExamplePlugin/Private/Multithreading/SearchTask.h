@@ -22,5 +22,6 @@ public:
 		  PArray(MoveTemp(PArray)),
 		  NextIndexToCheck(NextIndexToCheck)
 	{
+		Buffer.Reserve(DesiredBufferSize);
 	}
 };

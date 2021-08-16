@@ -3,9 +3,10 @@
 
 FCategoryDetail::FCategoryDetail(ISettingsModule& SettingsModule,
                                  const ISettingsCategoryPtr& SettingCategory,
-                                 const ISettingsSectionPtr& FirstSettingsSection): SettingsModule(SettingsModule),
-	SettingCategory(SettingCategory),
-	FirstSettingsSection(FirstSettingsSection)
+                                 const ISettingsSectionPtr& FirstSettingsSection)
+	: SettingsModule(SettingsModule),
+	  SettingCategory(SettingCategory),
+	  FirstSettingsSection(FirstSettingsSection)
 {
 }
 

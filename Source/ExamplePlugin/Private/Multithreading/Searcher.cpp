@@ -3,12 +3,11 @@
 #include "SearchTask.h"
 #include "ResultItemFoundMsg.h"
 
-//todo think about reserve for array
 FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint)
-	: ChunkSize(ChunkSize),
+	: PropertyHolder(FPropertyHolder::Get()),
 	  MessageEndpoint(MessageEndpoint),
-	  Result(0, FString(), 0, 0),
-	  PropertyHolder(FPropertyHolder::Get()),
+	  ChunkSize(ChunkSize),
+	  InputHandler(0, FString(), 0, 0),
 	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal))
 {
 }
@@ -18,31 +17,12 @@ bool FSearcher::Init()
 	return true;
 }
 
-
-void FSearcher::EnsureCompletion()
-{
-	Stop();
-	if (Thread)
-	{
-		Thread->WaitForCompletion();
-	}
-}
-
-void FSearcher::Stop()
-{
-	m_Kill = true;
-	RequestCounter.Increment();
-	WakeUpWorkerEvent->Trigger();
-}
-
-
 uint32 FSearcher::Run()
 {
 	//Initial wait before starting
 	FPlatformProcess::Sleep(0.03);
-	UE_LOG(LogTemp, Log, TEXT("EP : FSearcher is Running!"));
 	bool bIsInputChangedDuringSearching = false;
-	while (!m_Kill)
+	while (!bShouldStopThread)
 	{
 		if (!bIsInputChangedDuringSearching)
 		{
@@ -52,27 +32,29 @@ uint32 FSearcher::Run()
 		{
 			bIsInputChangedDuringSearching = false;
 		}
-		if (m_Kill)
+		if (bShouldStopThread)
 		{
 			return 0;
 		}
 		TOptional<FSearchTask> FindResultTask;
-		TOptional<FSearchTask> FillBufferTask;
 		{
 			FScopeLock ScopeLock(&InputOperationSection);
-			if (!Result.IsFinishedProcess)
+			if (!InputHandler.bIsProcessRequestFinished)
 			{
-				Result.MoveFromBufferToMainResult(*this);
+				if (InputHandler.MoveFromBufferToMainResult())
+				{
+					NotifyMainThread();
+				};
 				// if need to find more or need to fill buffer
-				if (Result.DesiredResultSize > Result.FoundResultCounter)
+				if (InputHandler.DesiredOutputSize > InputHandler.FoundOutputCounter)
 				{
 					FindResultTask =
 						FSearchTask(RequestCounter.GetValue(),
-						            MoveTemp(Result.Input),
-						            Result.DesiredResultSize - Result.FoundResultCounter,
-						            Result.DesiredBufferSize - Result.Buffer.Num(),
-						            MoveTemp(Result.PArray),
-						            Result.NextIndexToCheck);
+						            MoveTemp(InputHandler.InputRequest),
+						            InputHandler.DesiredOutputSize - InputHandler.FoundOutputCounter,
+						            InputHandler.DesiredBufferSize - InputHandler.Buffer.Num(),
+						            MoveTemp(InputHandler.PArray),
+						            InputHandler.NextIndexToCheck);
 				}
 			}
 		}
@@ -86,6 +68,69 @@ uint32 FSearcher::Run()
 	}
 	return 0;
 }
+
+void FSearcher::Stop()
+{
+	bShouldStopThread = true;
+	RequestCounter.Increment();
+	WakeUpWorkerEvent->Trigger();
+}
+
+void FSearcher::SetInput(const FString& NewInput)
+{
+	RequestCounter.Increment();
+	bool IsEmptyInput;
+	int32 Id;
+	{
+		FScopeLock ScopeLock(&InputOperationSection);
+		InputHandler = FInputHandler(RequestCounter.GetValue(), NewInput, ChunkSize, ChunkSize);
+		IsEmptyInput = InputHandler.bIsProcessRequestFinished;
+		Id = InputHandler.Id;
+	}
+	if (IsEmptyInput)
+	{
+		AllWordsFound(Id);
+	}
+	else
+	{
+		WakeUpWorkerEvent->Trigger();
+	}
+}
+
+TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
+{
+	TArray<RequiredType> ReturnResult;
+	bool bIsSearchingFinished;
+	{
+		FScopeLock ScopeLock(&InputOperationSection);
+		ensureAlways(RequestCounter.GetValue() == InputHandler.Id);
+		ReturnResult = MoveTemp(InputHandler.OutputToGive);
+		bIsSearchingFinished = InputHandler.bIsProcessRequestFinished;
+		InputHandler.OutputToGive.Reset();
+		bIsNotifiedMainThread = false;
+	}
+	return TPair<bool, TArray<RequiredType>>{bIsSearchingFinished, ReturnResult};
+}
+
+void FSearcher::FindMoreDataResult()
+{
+	{
+		FScopeLock ScopeLock(&InputOperationSection);
+		ensureAlways(InputHandler.Id == RequestCounter.GetValue());
+		InputHandler.DesiredOutputSize += ChunkSize;
+	}
+	WakeUpWorkerEvent->Trigger();
+}
+
+void FSearcher::EnsureCompletion()
+{
+	Stop();
+	if (Thread)
+	{
+		Thread->WaitForCompletion();
+	}
+}
+
 
 bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 {
@@ -119,10 +164,8 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 	return false;
 }
 
-/**
- *Return true if input change while processing
- */
-bool FSearcher::FillBuffer(FSearchTask& Task)
+
+bool FSearcher::FillBuffer(FSearchTask& Task) const
 {
 	if (!Task.bIsCompleteSearching)
 	{
@@ -143,14 +186,42 @@ bool FSearcher::FillBuffer(FSearchTask& Task)
 	return false;
 }
 
-bool FSearcher::AddFoundItemToResult(RequiredType&& Item, int32 TaskId)
-// todo maybe add not by one word? Maybe use thread safe queue?
+bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 {
 	FScopeLock ScopeLock(&InputOperationSection);
-	if (TaskId == RequestCounter.GetValue())
+	if (Task.TaskId == RequestCounter.GetValue())
 	{
-		Result.ResultToGive.Add(MoveTemp(Item));
-		++Result.FoundResultCounter;
+		ensureAlways(InputHandler.Id == Task.TaskId);
+		InputHandler.InputRequest = MoveTemp((Task.Request));
+		InputHandler.PArray = MoveTemp(Task.PArray);
+		InputHandler.NextIndexToCheck = Task.NextIndexToCheck;
+		if (Task.bIsCompleteSearching && Task.Buffer.Num() == 0)
+		{
+			InputHandler.bIsProcessRequestFinished = true;
+		}
+		if (Task.Buffer.Num() != 0)
+		{
+			if (InputHandler.Buffer.Num() == 0)
+			{
+				InputHandler.Buffer = MoveTemp(Task.Buffer);
+			}
+			else
+			{
+				InputHandler.Buffer.Append(MoveTemp(Task.Buffer));
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool FSearcher::AddFoundItemToResult(RequiredType&& Item, int32 TaskId)
+{
+	FScopeLock ScopeLock(&InputOperationSection);
+	if (TaskId == RequestCounter.GetValue() && InputHandler.Id == TaskId)
+	{
+		InputHandler.OutputToGive.Add(MoveTemp(Item));
+		++InputHandler.FoundOutputCounter;
 		NotifyMainThread();
 		return true;
 	}
@@ -162,107 +233,21 @@ bool FSearcher::AllWordsFound(int32 InputId)
 	FScopeLock ScopeLock(&InputOperationSection);
 	if (InputId == RequestCounter.GetValue())
 	{
-		Result.IsFinishedProcess = true;
+		InputHandler.bIsProcessRequestFinished = true;
 		NotifyMainThread();
 		return true;
 	}
 	return false;
 }
 
-/**
- *Return if successfully saved
- */
-bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
-{
-	FScopeLock ScopeLock(&InputOperationSection);
-	if (Task.TaskId == RequestCounter.GetValue())
-	{
-		ensureAlways(Result.Id == Task.TaskId);
-		Result.Input = MoveTemp((Task.Request));
-		Result.PArray = MoveTemp(Task.PArray);
-		Result.NextIndexToCheck = Task.NextIndexToCheck;
-		if (Task.bIsCompleteSearching && Task.Buffer.Num() != 0)
-		{
-			Result.IsFinishedProcess = true;
-		}
-		if (Task.Buffer.Num() != 0)
-		{
-			if (Result.Buffer.Num() == 0)
-			{
-				Result.Buffer = MoveTemp(Task.Buffer);
-			}
-			else
-			{
-				/* todo check that move operator for array elements call 
-				 * 
-				for (int i = 0; i < Task.Buffer.Num(); ++i)
-				{
-					Result.Buffer.Add(MoveTemp(Task.Buffer[i]));
-				}*/
-				// Task.Buffer.Reset();// todo maybe no need to reset?
-				Result.Buffer.Append(MoveTemp(Task.Buffer));
-			}
-		}
-		return true;
-	}
-	return false;
-}
-
-/** Calls in locked object */
 void FSearcher::NotifyMainThread()
 {
-	if (!IsNotifiedMainThread)
+	if (!bIsNotifiedMainThread)
 	{
-		IsNotifiedMainThread = true;
+		bIsNotifiedMainThread = true;
 		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
 		{
 			CurrentMessageEndpoint->Send(new FResultItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
 		}
 	}
-}
-
-TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
-{
-	TArray<RequiredType> ReturnResult;
-	bool bIsSearchingFinished;
-	{
-		FScopeLock ScopeLock(&InputOperationSection);
-		ensureAlways(RequestCounter.GetValue() == Result.Id);
-		ReturnResult = MoveTemp(Result.ResultToGive);
-		bIsSearchingFinished = Result.IsFinishedProcess;
-		Result.ResultToGive.Reset();
-		IsNotifiedMainThread = false;
-	}
-	return TPair<bool, TArray<RequiredType>>{bIsSearchingFinished, ReturnResult};
-}
-
-void FSearcher::SetInput(const FString& NewInput)
-{
-	RequestCounter.Increment();
-	bool IsEmptyInput;
-	int32 Id;
-	{
-		FScopeLock ScopeLock(&InputOperationSection);
-		Result = FInputResult(RequestCounter.GetValue(), NewInput, ChunkSize, ChunkSize);
-		IsEmptyInput = Result.IsFinishedProcess;
-		Id = Result.Id;
-	}
-	if (IsEmptyInput)
-	{
-		AllWordsFound(Id);
-	}
-	else
-	{
-		WakeUpWorkerEvent->Trigger();
-	}
-}
-
-void FSearcher::FindMoreDataResult()
-{
-	{
-		FScopeLock ScopeLock(&InputOperationSection);
-		ensureAlways(Result.Id == RequestCounter.GetValue());
-		Result.DesiredResultSize += ChunkSize;
-	}
-	WakeUpWorkerEvent->Trigger();
 }

@@ -2,100 +2,22 @@
 
 #include "Details/CategoryDetail.h"
 #include "ISettingsContainer.h"
+#include "ISettingsEditorModel.h"
+#include "ISettingsEditorModule.h"
 #include "ISettingsModule.h"
+#include "Misc/FileHelper.h"
+#include "PropertyEditor/Private/SDetailsView.h"
+
+#include "Details/AbstractSettingDetail.h"
 #include "Details/InnerCategoryDetail.h"
 #include "Details/PropertyDetail.h"
 #include "Details/SectionDetail.h"
 #include "Multithreading/SearchTask.h"
-#include "Misc/FileHelper.h"
-#include "PropertyEditor/Private/SDetailsView.h"
-#include "Details/AbstractSettingDetail.h"
-#include "ISettingsEditorModel.h"
-#include "ISettingsEditorModule.h"
 
-FPropertyHolder::FPropertyHolder()
+FPropertyHolder& FPropertyHolder::Get()
 {
-	ForceUpdateSettings();
-	LoadProperties();
-}
-
-template <typename T>
-T FPropertyHolder::AddToPropertyHolder(const T& Item)
-{
-	SettingDetails.Add(Item);
-	SettingDetailsNames.Add(Item->GetDisplayName().ToString());
-	return Item;
-}
-
-void FPropertyHolder::LoadProperties()
-{
-	struct FSectionSortPredicate
-	{
-		FORCEINLINE bool operator()(ISettingsSectionPtr A, ISettingsSectionPtr B) const
-		{
-			if (!A.IsValid() && !B.IsValid())
-			{
-				return false;
-			}
-
-			if (A.IsValid() != B.IsValid())
-			{
-				return B.IsValid();
-			}
-
-			return (A->GetDisplayName().CompareTo(B->GetDisplayName()) < 0);
-		}
-	};
-
-	const TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
-	TArray<ISettingsCategoryPtr> EditorSettingContainerCategories;
-	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
-
-	for (ISettingsCategoryPtr& Category : EditorSettingContainerCategories)
-	{
-		TArray<ISettingsSectionPtr> Sections;
-		Category->GetSections(Sections);
-		if (Sections.Num() == 0)
-		{
-			continue;
-		}
-		Sections.Sort(FSectionSortPredicate());
-		TSharedRef<FCategoryDetail> CategoryDetail = AddToPropertyHolder(
-			MakeShared<FCategoryDetail>(SettingsModule, Category, Sections[0]));
-		for (const ISettingsSectionPtr& Section : Sections)
-		{
-			TSharedRef<FSectionDetail> SectionDetail = AddToPropertyHolder(
-				MakeShared<FSectionDetail>(Section, CategoryDetail));
-
-			UObject* SectionObject = Section->GetSettingsObject().Get();
-			FString SectionObjectName = SectionObject->GetName();
-
-			TMap<FString, TSharedRef<FInnerCategoryDetail>> PropertyCategoryMap;
-
-			for (TFieldIterator<FProperty> PropertyIt(SectionObject->GetClass()); PropertyIt; ++PropertyIt)
-			{
-				const FString& PropertyCategoryName = PropertyIt->GetMetaData(TEXT("Category"));
-				if (PropertyCategoryName.IsEmpty())
-				{
-					continue;
-				}
-				TSharedPtr<FInnerCategoryDetail> InnerCategoryDetail;
-				if (!PropertyCategoryMap.Contains(PropertyCategoryName))
-				{
-					InnerCategoryDetail = AddToPropertyHolder<TSharedRef<FInnerCategoryDetail>>(
-						MakeShared<FInnerCategoryDetail>(*PropertyIt, SectionDetail));
-					InnerCategoryDetail = PropertyCategoryMap.Add(PropertyCategoryName,
-					                                              InnerCategoryDetail.ToSharedRef());
-				}
-				else
-				{
-					InnerCategoryDetail = *PropertyCategoryMap.Find(PropertyCategoryName);
-				}
-				AddToPropertyHolder<TSharedRef<FPropertyDetail>>(
-					MakeShared<FPropertyDetail>(SectionObject, *PropertyIt, InnerCategoryDetail.ToSharedRef()));
-			}
-		}
-	}
+	static FPropertyHolder Holder;
+	return Holder;
 }
 
 TArray<int> FPropertyHolder::CreatePArray(const FString& Pattern)
@@ -127,7 +49,7 @@ TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& Task, const F
 			}
 			IterationCounter = 0;
 		}
-		if (IsSatisfiesRequest(SettingDetailsNames[i], Task.Request, Task.PArray))
+		if (IsSatisfiedRequest(SettingDetailsNames[i], Task.Request, Task.PArray))
 		{
 			Task.NextIndexToCheck = i + 1;
 			return i;
@@ -141,25 +63,6 @@ TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& Task, const F
 TSharedRef<const FAbstractSettingDetail> FPropertyHolder::GetSettingDetail(uint64 Index) const
 {
 	return SettingDetails[Index];
-}
-
-bool FPropertyHolder::IsSatisfiesRequest(const FString& StringInWhichWeFindPattern, const FString& Pattern,
-                                         const TArray<int>& PArray)
-{
-	int tail = -1;
-
-	for (int i = 0; i < StringInWhichWeFindPattern.Len(); i++)
-	{
-		while (tail != -1 && StringInWhichWeFindPattern[i] != Pattern[tail + 1])
-			tail = PArray[tail];
-		if (StringInWhichWeFindPattern[i] == Pattern[tail + 1])
-			tail++;
-		if (tail == Pattern.Len() - 1)
-		{
-			return true;
-		}
-	}
-	return false;
 }
 
 void FPropertyHolder::LogAllProperties() const
@@ -288,17 +191,10 @@ void FPropertyHolder::LogAllProperties() const
 	}
 }
 
-void FPropertyHolder::WriteLog(const FString& Text, bool IsAppend)
+FPropertyHolder::FPropertyHolder()
 {
-	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog.txt";
-	FFileHelper::SaveStringToFile(Text, *FileLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
-	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
-}
-
-FPropertyHolder& FPropertyHolder::Get()
-{
-	static FPropertyHolder Holder;
-	return Holder;
+	ForceUpdateSettings();
+	LoadProperties();
 }
 
 /** Need to load AutoDiscoveredSettings in Setting Module. Otherwise not all properties will be discovered by data holder. */
@@ -315,4 +211,109 @@ void FPropertyHolder::ForceUpdateSettings() const
 
 		SettingsEditorModule.CreateEditor(SettingsEditorModel);
 	}
+}
+
+void FPropertyHolder::LoadProperties()
+{
+	struct FSectionSortPredicate
+	{
+		FORCEINLINE bool operator()(ISettingsSectionPtr A, ISettingsSectionPtr B) const
+		{
+			if (!A.IsValid() && !B.IsValid())
+			{
+				return false;
+			}
+
+			if (A.IsValid() != B.IsValid())
+			{
+				return B.IsValid();
+			}
+
+			return (A->GetDisplayName().CompareTo(B->GetDisplayName()) < 0);
+		}
+	};
+
+	const TSharedPtr<ISettingsContainer> EditorSettingContainer = SettingsModule.GetContainer("Editor");
+	TArray<ISettingsCategoryPtr> EditorSettingContainerCategories;
+	EditorSettingContainer->GetCategories(EditorSettingContainerCategories);
+
+	for (ISettingsCategoryPtr& Category : EditorSettingContainerCategories)
+	{
+		TArray<ISettingsSectionPtr> Sections;
+		Category->GetSections(Sections);
+		if (Sections.Num() == 0)
+		{
+			continue;
+		}
+		Sections.Sort(FSectionSortPredicate());
+		TSharedRef<FCategoryDetail> CategoryDetail = AddToPropertyHolder(
+			MakeShared<FCategoryDetail>(SettingsModule, Category, Sections[0]));
+		for (const ISettingsSectionPtr& Section : Sections)
+		{
+			TSharedRef<FSectionDetail> SectionDetail = AddToPropertyHolder(
+				MakeShared<FSectionDetail>(Section, CategoryDetail));
+
+			UObject* SectionObject = Section->GetSettingsObject().Get();
+			FString SectionObjectName = SectionObject->GetName();
+
+			TMap<FString, TSharedRef<FInnerCategoryDetail>> PropertyCategoryMap;
+
+			for (TFieldIterator<FProperty> PropertyIt(SectionObject->GetClass()); PropertyIt; ++PropertyIt)
+			{
+				const FString& PropertyCategoryName = PropertyIt->GetMetaData(TEXT("Category"));
+				if (PropertyCategoryName.IsEmpty())
+				{
+					continue;
+				}
+				TSharedPtr<FInnerCategoryDetail> InnerCategoryDetail;
+				if (!PropertyCategoryMap.Contains(PropertyCategoryName))
+				{
+					InnerCategoryDetail = AddToPropertyHolder<TSharedRef<FInnerCategoryDetail>>(
+						MakeShared<FInnerCategoryDetail>(*PropertyIt, SectionDetail));
+					InnerCategoryDetail = PropertyCategoryMap.Add(PropertyCategoryName,
+					                                              InnerCategoryDetail.ToSharedRef());
+				}
+				else
+				{
+					InnerCategoryDetail = *PropertyCategoryMap.Find(PropertyCategoryName);
+				}
+				AddToPropertyHolder<TSharedRef<FPropertyDetail>>(
+					MakeShared<FPropertyDetail>(SectionObject, *PropertyIt, InnerCategoryDetail.ToSharedRef()));
+			}
+		}
+	}
+}
+
+template <typename T>
+T FPropertyHolder::AddToPropertyHolder(const T& Item)
+{
+	SettingDetails.Add(Item);
+	SettingDetailsNames.Add(Item->GetDisplayName().ToString());
+	return Item;
+}
+
+void FPropertyHolder::WriteLog(const FString& Text, bool IsAppend)
+{
+	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog.txt";
+	FFileHelper::SaveStringToFile(Text, *FileLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
+	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
+}
+
+bool FPropertyHolder::IsSatisfiedRequest(const FString& StringToFindPattern, const FString& Pattern,
+                                         const TArray<int>& PArray)
+{
+	int Tail = -1;
+
+	for (int i = 0; i < StringToFindPattern.Len(); i++)
+	{
+		while (Tail != -1 && StringToFindPattern[i] != Pattern[Tail + 1])
+			Tail = PArray[Tail];
+		if (StringToFindPattern[i] == Pattern[Tail + 1])
+			Tail++;
+		if (Tail == Pattern.Len() - 1)
+		{
+			return true;
+		}
+	}
+	return false;
 }

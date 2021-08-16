@@ -1,8 +1,9 @@
 #pragma once
 
-#include "AbstractSettingDetail.h"
 #include "ISettingsCategory.h"
 #include "ISettingsSection.h"
+
+#include "AbstractSettingDetail.h"
 
 class ISettingsModule;
 
