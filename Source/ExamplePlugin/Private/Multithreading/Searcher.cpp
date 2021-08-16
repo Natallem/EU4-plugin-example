@@ -26,7 +26,7 @@ uint32 FSearcher::Run()
 	{
 		if (!bIsInputChangedDuringSearching)
 		{
-			WakeUpWorkerEvent->Wait(); //todo need to check before in need to find more answers 
+			WakeUpWorkerEvent->Wait();
 		}
 		else
 		{
@@ -136,7 +136,7 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 {
 	if (FindResultTask.PArray.Num() == 0)
 	{
-		FindResultTask.PArray = FPropertyHolder::CreatePArray(FindResultTask.Request);
+		FindResultTask.PArray = FPropertyHolder::CreatePArray(FindResultTask.RequestString);
 	}
 	while (FindResultTask.DesiredResultSize > 0)
 	{
@@ -192,7 +192,7 @@ bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 	if (Task.TaskId == RequestCounter.GetValue())
 	{
 		ensureAlways(InputHandler.Id == Task.TaskId);
-		InputHandler.InputRequest = MoveTemp((Task.Request));
+		InputHandler.InputRequest = MoveTemp((Task.RequestString));
 		InputHandler.PArray = MoveTemp(Task.PArray);
 		InputHandler.NextIndexToCheck = Task.NextIndexToCheck;
 		if (Task.bIsCompleteSearching && Task.Buffer.Num() == 0)

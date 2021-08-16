@@ -5,7 +5,7 @@ class TSearchTask
 {
 public:
 	int32 TaskId;
-	FString Request;
+	FString RequestString;
 	int32 DesiredResultSize;
 	int32 DesiredBufferSize;
 	TArray<int> PArray;
@@ -13,10 +13,10 @@ public:
 	bool bIsCompleteSearching = false;
 	TArray<RequiredType> Buffer;
 
-	TSearchTask(int32 TaskId, FString&& Request, int32 DesiredResultSize, int32 DesiredBufferSize,
+	TSearchTask(int32 TaskId, FString&& RequestString, int32 DesiredResultSize, int32 DesiredBufferSize,
 	            TArray<int>&& PArray, uint64 NextIndexToCheck)
 		: TaskId(TaskId),
-		  Request(MoveTemp(Request)),
+		  RequestString(MoveTemp(RequestString)),
 		  DesiredResultSize(DesiredResultSize),
 		  DesiredBufferSize(DesiredBufferSize),
 		  PArray(MoveTemp(PArray)),

@@ -20,43 +20,43 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TArray<int> FPropertyHolder::CreatePArray(const FString& Pattern)
+TArray<int> FPropertyHolder::CreatePArray(const FString& InPattern)
 {
 	TArray<int> Result;
-	Result.Init(-1, Pattern.Len());
-	for (int r = 1, l = -1; r < Pattern.Len(); r++)
+	Result.Init(-1, InPattern.Len());
+	for (int r = 1, l = -1; r < InPattern.Len(); r++)
 	{
-		while (l != -1 && Pattern[l + 1] != Pattern[r])
+		while (l != -1 && InPattern[l + 1] != InPattern[r])
 			l = Result[l];
-		if (Pattern[l + 1] == Pattern[r])
+		if (InPattern[l + 1] == InPattern[r])
 			Result[r] = ++l;
 	}
 	return Result;
 }
 
-TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter)
+TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
-	for (int i = Task.NextIndexToCheck; i < SettingDetailsNames.Num(); ++i)
+	for (int i = OutTask.NextIndexToCheck; i < SettingDetailsNames.Num(); ++i)
 	{
 		++IterationCounter;
 		if (IterationCounter == IterationBeforeCheck)
 		{
-			if (RequestCounter.GetValue() != Task.TaskId)
+			if (InRequestCounter.GetValue() != OutTask.TaskId)
 			{
 				return TOptional<RequiredType>();
 			}
 			IterationCounter = 0;
 		}
-		if (IsSatisfiedRequest(SettingDetailsNames[i], Task.Request, Task.PArray))
+		if (IsSatisfiedRequest(SettingDetailsNames[i], OutTask.RequestString, OutTask.PArray))
 		{
-			Task.NextIndexToCheck = i + 1;
+			OutTask.NextIndexToCheck = i + 1;
 			return i;
 		}
 	}
-	Task.NextIndexToCheck = SettingDetailsNames.Num();
-	Task.bIsCompleteSearching = true;
+	OutTask.NextIndexToCheck = SettingDetailsNames.Num();
+	OutTask.bIsCompleteSearching = true;
 	return TOptional<RequiredType>();
 }
 
@@ -292,25 +292,25 @@ T FPropertyHolder::AddToPropertyHolder(const T& Item)
 	return Item;
 }
 
-void FPropertyHolder::WriteLog(const FString& Text, bool IsAppend)
+void FPropertyHolder::WriteLog(const FString& Text, bool bIsAppend)
 {
 	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog.txt";
 	FFileHelper::SaveStringToFile(Text, *FileLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
-	                              (IsAppend) ? FILEWRITE_Append : FILEWRITE_None);
+	                              (bIsAppend) ? FILEWRITE_Append : FILEWRITE_None);
 }
 
-bool FPropertyHolder::IsSatisfiedRequest(const FString& StringToFindPattern, const FString& Pattern,
+bool FPropertyHolder::IsSatisfiedRequest(const FString& InStringToFindPattern, const FString& InPattern,
                                          const TArray<int>& PArray)
 {
 	int Tail = -1;
 
-	for (int i = 0; i < StringToFindPattern.Len(); i++)
+	for (int i = 0; i < InStringToFindPattern.Len(); i++)
 	{
-		while (Tail != -1 && StringToFindPattern[i] != Pattern[Tail + 1])
+		while (Tail != -1 && InStringToFindPattern[i] != InPattern[Tail + 1])
 			Tail = PArray[Tail];
-		if (StringToFindPattern[i] == Pattern[Tail + 1])
+		if (InStringToFindPattern[i] == InPattern[Tail + 1])
 			Tail++;
-		if (Tail == Pattern.Len() - 1)
+		if (Tail == InPattern.Len() - 1)
 		{
 			return true;
 		}

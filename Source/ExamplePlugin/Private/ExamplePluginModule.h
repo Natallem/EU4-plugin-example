@@ -24,8 +24,8 @@ public:
 	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
 
 private:
-	void HandleFoundWords(const FResultItemFoundMsg& Message,
-	                      const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context);
+	void HandleFoundWords(const FResultItemFoundMsg& InMessage,
+	                      const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& InContext);
 
 	TSharedPtr<FUICommandList> PluginCommands;
 	TWeakPtr<SSearchEverywhereWindow> PluginWindow;
@@ -35,7 +35,7 @@ private:
 	uint32 LastKeyboardUserIndex = 0;
 	FKey LastKeyboardUserInput;
 
-	constexpr static int32 ResultChunkSize = 100; // todo change
+	constexpr static int32 ResultChunkSize = 100;
 	TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint = FMessageEndpoint::Builder(
 			TEXT("ResultItemFoundEndpoint"))
 		.Handling<FResultItemFoundMsg>(this, &FExamplePluginModule::HandleFoundWords);

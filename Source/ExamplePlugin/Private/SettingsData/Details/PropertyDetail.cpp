@@ -7,10 +7,10 @@
 #include "InnerCategoryDetail.h"
 #include "SectionDetail.h"
 
-FPropertyDetail::FPropertyDetail(UObject* SettingObject, FProperty* Property,
+FPropertyDetail::FPropertyDetail(UObject* InSettingObject, FProperty* InProperty,
                                  const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail):
-	SettingObject(SettingObject),
-	Property(Property),
+	SettingObject(InSettingObject),
+	Property(InProperty),
 	InnerCategoryDetail(InnerCategoryDetail)
 {
 }
@@ -31,4 +31,9 @@ void FPropertyDetail::DoAction() const
 		FName("Editor"),
 		InnerCategoryDetail->SectionDetail->CategoryDetail->GetName(),
 		InnerCategoryDetail->SectionDetail->GetName());
+}
+
+FString FPropertyDetail::GetPath() const
+{
+	return InnerCategoryDetail->GetPath() + Delimiter + GetDisplayName().ToString();
 }

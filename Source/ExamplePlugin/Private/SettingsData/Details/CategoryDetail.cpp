@@ -1,12 +1,12 @@
 #include "CategoryDetail.h"
 #include "ISettingsModule.h"
 
-FCategoryDetail::FCategoryDetail(ISettingsModule& SettingsModule,
-                                 const ISettingsCategoryPtr& SettingCategory,
-                                 const ISettingsSectionPtr& FirstSettingsSection)
-	: SettingsModule(SettingsModule),
-	  SettingCategory(SettingCategory),
-	  FirstSettingsSection(FirstSettingsSection)
+FCategoryDetail::FCategoryDetail(ISettingsModule& InSettingsModule,
+                                 const ISettingsCategoryPtr& InSettingCategory,
+                                 const ISettingsSectionPtr& InFirstSettingsSection)
+	: SettingsModule(InSettingsModule),
+	  SettingCategory(InSettingCategory),
+	  FirstSettingsSection(InFirstSettingsSection)
 {
 }
 
@@ -25,4 +25,9 @@ void FCategoryDetail::DoAction() const
 	SettingsModule.ShowViewer(FName("Editor"),
 	                          GetName(),
 	                          FirstSettingsSection->GetName());
+}
+
+FString FCategoryDetail::GetPath() const
+{
+	return GetDisplayName().ToString();
 }

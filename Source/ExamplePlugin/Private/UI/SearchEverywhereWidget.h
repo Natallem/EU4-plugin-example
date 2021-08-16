@@ -29,8 +29,7 @@ public:
 
 		SLATE_ARGUMENT(FText, PreviousSearchRequest)
 	SLATE_END_ARGS()
-
-
+	
 	void Construct(const FArguments& InArgs, TSharedRef<SSearchEverywhereWindow> InParentWindow);
 
 	void UpdateShownResults();
@@ -47,7 +46,7 @@ private:
 	void OnTextCommit(const FText& CommittedText, ETextCommit::Type CommitType) const;
 	FReply OnSearchTextKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent);
 	void OnSelectItem(FListItemPtr InItem) const;
-	FReply OpenSettings(FName ContainerName, FName CategoryName, FName SectionName) const;
+	FReply OpenSettings(FName InContainerName, FName InCategoryName, FName InSectionName) const;
 	static FReply LogAllProperties();
 
 	FPropertyHolder& PropertyHolder = FPropertyHolder::Get();
@@ -58,7 +57,7 @@ private:
 	TSharedPtr<STextBlock> ShowMoreResultsItem;
 	TSharedPtr<SWidget> ListTableWidget;
 	TSharedPtr<SSearchEverywhereWindow> ParentWindow;
-	bool ShouldCleanList = false;
+	bool bShouldCleanList = false;
 	int64 SelectedListViewItemIndex = 0;
 	bool bIsFirstFocusActivate = true;
 };

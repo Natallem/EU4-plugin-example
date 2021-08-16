@@ -6,11 +6,11 @@
 #include "CategoryDetail.h"
 #include "SectionDetail.h"
 
-FInnerCategoryDetail::FInnerCategoryDetail(FProperty* Property, const TSharedRef<FSectionDetail>& SectionDetail)
-	: SectionDetail(SectionDetail)
+FInnerCategoryDetail::FInnerCategoryDetail(FProperty* InProperty, const TSharedRef<FSectionDetail>& InSectionDetail)
+	: SectionDetail(InSectionDetail)
 {
 	CategoryDisplayName = FText::AsCultureInvariant(
-		FName::NameToDisplayString(Property->GetMetaData(TEXT("Category")), false));
+		FName::NameToDisplayString(InProperty->GetMetaData(TEXT("Category")), false));
 }
 
 FText FInnerCategoryDetail::GetDisplayName() const
@@ -29,4 +29,9 @@ void FInnerCategoryDetail::DoAction() const
 		FName("Editor"),
 		SectionDetail->CategoryDetail->GetName(),
 		SectionDetail->GetName());
+}
+
+FString FInnerCategoryDetail::GetPath() const
+{
+	return SectionDetail->GetPath() + Delimiter + GetDisplayName().ToString();
 }

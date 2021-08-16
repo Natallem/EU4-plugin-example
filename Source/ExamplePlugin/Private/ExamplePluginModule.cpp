@@ -2,13 +2,14 @@
 
 #include "ExamplePluginModule.h"
 
-#include "UI/ExamplePluginStyle.h"
-#include "ExamplePluginCommands.h"
 #include "LevelEditor.h"
-#include "SettingsData/PropertyHolder.h"
+
+#include "ExamplePluginCommands.h"
+#include "UI/ExamplePluginStyle.h"
 #include "UI/SearchEverywhereWindow.h"
-#include "Multithreading/Searcher.h"
 #include "UI/SearchEverywhereWidget.h"
+#include "Multithreading/Searcher.h"
+
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
@@ -82,8 +83,8 @@ void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent&
 	}
 }
 
-void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& Message,
-                                            const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context)
+void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& InMessage,
+                                            const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& InContext)
 {
 	if (const TSharedPtr<SSearchEverywhereWindow> Window = PluginWindow.Pin())
 	{

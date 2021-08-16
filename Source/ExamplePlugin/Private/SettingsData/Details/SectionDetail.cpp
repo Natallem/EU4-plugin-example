@@ -3,10 +3,10 @@
 #include "CategoryDetail.h"
 #include "ISettingsModule.h"
 
-FSectionDetail::FSectionDetail(const ISettingsSectionPtr& SettingsSection,
-                               const TSharedRef<FCategoryDetail>& CategoryDetail)
-	: CategoryDetail(CategoryDetail),
-	  SettingsSection(SettingsSection)
+FSectionDetail::FSectionDetail(const ISettingsSectionPtr& InSettingsSection,
+                               const TSharedRef<FCategoryDetail>& InCategoryDetail)
+	: CategoryDetail(InCategoryDetail),
+	  SettingsSection(InSettingsSection)
 {
 }
 
@@ -25,4 +25,9 @@ void FSectionDetail::DoAction() const
 	CategoryDetail->SettingsModule.ShowViewer(FName("Editor"),
 	                                          CategoryDetail->GetName(),
 	                                          GetName());
+}
+
+FString FSectionDetail::GetPath() const
+{
+	return CategoryDetail->GetPath() + Delimiter + GetDisplayName().ToString();
 }

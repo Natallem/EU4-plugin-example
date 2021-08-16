@@ -4,13 +4,13 @@
 template <typename RequiredType>
 struct TInputHandler
 {
-	TInputHandler(int32 Id, const FString& Input, int32 DesiredOutputSize,
+	TInputHandler(int32 Id, const FString& InInputRequest, int32 DesiredOutputSize,
 	              int32 DesiredBufferSize)
 		: Id(Id),
-		  InputRequest(Input),
+		  InputRequest(InInputRequest),
 		  DesiredOutputSize(DesiredOutputSize),
 		  DesiredBufferSize(DesiredBufferSize),
-		  bIsProcessRequestFinished(Input.IsEmpty())
+		  bIsProcessRequestFinished(InInputRequest.IsEmpty())
 	{
 		OutputToGive.Reserve(DesiredOutputSize);
 		Buffer.Reserve(DesiredBufferSize);

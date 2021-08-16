@@ -10,12 +10,13 @@ class ISettingsModule;
 class FCategoryDetail : public FAbstractSettingDetail
 {
 public:
-	FCategoryDetail(ISettingsModule& SettingsModule, const ISettingsCategoryPtr& SettingCategory,
-	                const ISettingsSectionPtr& FirstSettingsSection);
+	FCategoryDetail(ISettingsModule& InSettingsModule, const ISettingsCategoryPtr& InSettingCategory,
+	                const ISettingsSectionPtr& InFirstSettingsSection);
 
 	virtual FText GetDisplayName() const override;
 	virtual FName GetName() const override;
 	virtual void DoAction() const override;
+	virtual FString GetPath() const override;
 
 	ISettingsModule& SettingsModule;
 	ISettingsCategoryPtr SettingCategory;

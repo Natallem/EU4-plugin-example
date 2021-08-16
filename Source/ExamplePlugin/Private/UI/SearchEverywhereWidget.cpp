@@ -121,9 +121,9 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 void SSearchEverywhereWidget::UpdateShownResults()
 {
 	TPair<bool, TArray<RequiredType>> Result = Searcher->GetRequestData();
-	if (ShouldCleanList)
+	if (bShouldCleanList)
 	{
-		ShouldCleanList = false;
+		bShouldCleanList = false;
 		ItemsSource.Reset();
 	}
 
@@ -164,7 +164,7 @@ EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InC
 
 void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 {
-	ShouldCleanList = true;
+	bShouldCleanList = true;
 	Searcher->SetInput(Filter.ToString());
 }
 

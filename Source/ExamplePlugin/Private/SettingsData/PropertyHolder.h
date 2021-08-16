@@ -18,8 +18,8 @@ public:
 
 	static FPropertyHolder& Get();
 	
-	static TArray<int> CreatePArray(const FString& Pattern);
-	TOptional<RequiredType> FindNextWord(FSearchTask& Task, const FThreadSafeCounter& RequestCounter);
+	static TArray<int> CreatePArray(const FString& InPattern);
+	TOptional<RequiredType> FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter);
 	TSharedRef<const FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
 
 	void LogAllProperties() const;
@@ -31,8 +31,8 @@ private:
 	template <typename T>
 	T AddToPropertyHolder(const T& Item);
 	
-	static void WriteLog(const FString& Text, bool IsAppend = true);
-	static bool IsSatisfiedRequest(const FString& StringToFindPattern, const FString& Pattern,
+	static void WriteLog(const FString& Text, bool bIsAppend = true);
+	static bool IsSatisfiedRequest(const FString& InStringToFindPattern, const FString& InPattern,
 	                               const TArray<int>& PArray);
 	
 	TArray<FString> SettingDetailsNames;
