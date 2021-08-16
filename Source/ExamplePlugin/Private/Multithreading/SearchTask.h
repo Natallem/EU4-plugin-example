@@ -1,6 +1,6 @@
 #pragma once
 
-template<typename RequiredType>
+template <typename RequiredType>
 class TSearchTask
 {
 public:

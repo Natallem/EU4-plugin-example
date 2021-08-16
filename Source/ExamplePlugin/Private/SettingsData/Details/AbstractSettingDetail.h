@@ -11,6 +11,7 @@ public:
 	virtual ~FAbstractSettingDetail() = default;
 
 	virtual FText GetDisplayName() const = 0;
+	virtual FName GetName() const = 0;
 	virtual void DoAction() const = 0;
 
 	virtual TSharedRef<SWidget> GetRowWidget() const

@@ -46,7 +46,6 @@ private:
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,
 	                                                        const TSharedRef<STableViewBase>& OwnerTable) const;
 	void OnListSelectionChanged(FListItemPtr InItem, ESelectInfo::Type SelectInfo);
-	bool IsSelectableOrNavigable(FListItemPtr Item);
 	void CycleSelection(bool bIsMoving = false, bool bIsDownMoving = false);
 
 	void OnTextChanged(const FText& Filter);

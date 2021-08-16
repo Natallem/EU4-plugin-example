@@ -13,6 +13,7 @@ public:
 	FInnerCategoryDetail(FProperty* Property, const TSharedRef<FSectionDetail>& SectionDetail);
 
 	virtual FText GetDisplayName() const override;
+	virtual FName GetName() const override;
 	virtual void DoAction() const override;
 
 	TSharedRef<FSectionDetail> SectionDetail;

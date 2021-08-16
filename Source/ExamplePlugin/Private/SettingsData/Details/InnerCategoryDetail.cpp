@@ -18,9 +18,15 @@ FText FInnerCategoryDetail::GetDisplayName() const
 	return CategoryDisplayName;
 }
 
+FName FInnerCategoryDetail::GetName() const
+{
+	return FName();
+}
+
 void FInnerCategoryDetail::DoAction() const
 {
 	SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
-										FName("Editor"), FName(  SectionDetail->CategoryDetail->GetDisplayName().ToString()),
-										FName(SectionDetail->GetDisplayName().ToString()));
+		FName("Editor"),
+		SectionDetail->CategoryDetail->GetName(),
+		SectionDetail->GetName());
 }

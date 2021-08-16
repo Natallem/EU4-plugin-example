@@ -8,6 +8,7 @@
 #include "SettingsData/PropertyHolder.h"
 #include "UI/SearchEverywhereWindow.h"
 #include "Multithreading/Searcher.h"
+#include "UI/SearchEverywhereWidget.h"
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
@@ -17,6 +18,7 @@ void FExamplePluginModule::StartupModule()
 	FExamplePluginStyle::Initialize();
 	FExamplePluginStyle::ReloadTextures();
 	FExamplePluginCommands::Register();
+
 	OnApplicationPreInputKeyDownListenerHandle = FSlateApplication::Get().OnApplicationPreInputKeyDownListener().AddRaw(
 		this, &FExamplePluginModule::OnApplicationPreInputKeyDownListener);
 
@@ -26,12 +28,11 @@ void FExamplePluginModule::StartupModule()
 		FExamplePluginCommands::Get().OpenPluginWindow,
 		FExecuteAction::CreateRaw(this, &FExamplePluginModule::PluginButtonClicked),
 		FCanExecuteAction());
-	// CallbackHandler->SetWindowPtr(ExamplePluginWindow);
+
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
 	//todo add to asset editor
-	// Searcher->OnNewDataFound().BindThreadSafeSP(CallbackHandler, &FCallbackHandler::OnCallback); //todo maybe bind static
 }
 
 
@@ -46,6 +47,7 @@ void FExamplePluginModule::ShutdownModule()
 	}
 	FExamplePluginCommands::Unregister();
 	Searcher->EnsureCompletion();
+	FMessageEndpoint::SafeRelease(MessageEndpoint);
 }
 
 void FExamplePluginModule::PluginButtonClicked()
@@ -53,13 +55,11 @@ void FExamplePluginModule::PluginButtonClicked()
 	TSharedPtr<SSearchEverywhereWindow> ExistingWindow = PluginWindow.Pin();
 	if (ExistingWindow.IsValid() && ExistingWindow->IsActive())
 	{
-		UE_LOG(LogTemp, Log, TEXT("EP : Bring to front window"));
 		ExistingWindow->BringToFront();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("EP : Created new window"));
-		TWeakPtr<SWidget> PreviousFocusedUserWidget = FSlateApplication::Get().GetUser(LastKeyboardUser)->
+		TWeakPtr<SWidget> PreviousFocusedUserWidget = FSlateApplication::Get().GetUser(LastKeyboardUserIndex)->
 		                                                                       GetFocusedWidget();
 		ExistingWindow =
 			SNew(SSearchEverywhereWindow, PreviousFocusedUserWidget)
@@ -77,8 +77,17 @@ void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent&
 	                                                     InKeyEvent.IsShiftDown(), InKeyEvent.IsCommandDown()));
 	if (FExamplePluginCommands::Get().OpenPluginWindow->HasActiveChord(CheckChord))
 	{
-		LastKeyboardUser = InKeyEvent.GetUserIndex();
+		LastKeyboardUserIndex = InKeyEvent.GetUserIndex();
 		LastKeyboardUserInput = InKeyEvent.GetKey();
+	}
+}
+
+void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& Message,
+                                            const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context)
+{
+	if (const TSharedPtr<SSearchEverywhereWindow> Window = PluginWindow.Pin())
+	{
+		Window->GetSearchEverywhereWidget()->UpdateShownResults();
 	}
 }
 

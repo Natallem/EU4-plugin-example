@@ -36,7 +36,7 @@ class FSearcher : public FRunnable
 public:
 	using FSearchTask = TSearchTask<RequiredType>;
 	using FInputResult = TInputResult<RequiredType>;
-	
+
 	explicit FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint);
 
 	virtual ~FSearcher() override = default;
@@ -73,12 +73,12 @@ private:
 
 template <typename RequiredType>
 TInputResult<RequiredType>::TInputResult(int32 Id, const FString& Input, int32 DesiredResultSize,
-										int32 DesiredBufferSize)
+                                         int32 DesiredBufferSize)
 	: Id(Id),
-	Input(Input),
-	DesiredResultSize(DesiredResultSize),
-	DesiredBufferSize(DesiredBufferSize),
-	IsFinishedProcess(Input.IsEmpty())
+	  Input(Input),
+	  DesiredResultSize(DesiredResultSize),
+	  DesiredBufferSize(DesiredBufferSize),
+	  IsFinishedProcess(Input.IsEmpty())
 {
 }
 

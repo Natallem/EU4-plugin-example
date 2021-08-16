@@ -10,7 +10,7 @@ class SSearchEverywhereWindow final : public SWindow
 {
 public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWindow)
-			:  _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
+			: _Style(&FCoreStyle::Get().GetWidgetStyle<FWindowStyle>("Window"))
 			  , _PreviousSearchRequest()
 		{
 		}

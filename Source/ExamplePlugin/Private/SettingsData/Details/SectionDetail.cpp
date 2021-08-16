@@ -2,7 +2,6 @@
 
 #include "ISettingsModule.h"
 #include "CategoryDetail.h"
-#include "Widgets/Text/STextBlock.h"
 
 FSectionDetail::FSectionDetail(const ISettingsSectionPtr& SettingsSection,
                                const TSharedRef<FCategoryDetail>& CategoryDetail)
@@ -16,10 +15,14 @@ FText FSectionDetail::GetDisplayName() const
 	return SettingsSection->GetDisplayName();
 }
 
+FName FSectionDetail::GetName() const
+{
+	return SettingsSection->GetName();
+}
+
 void FSectionDetail::DoAction() const
 {
 	CategoryDetail->SettingsModule.ShowViewer(FName("Editor"),
-	                                          FName(CategoryDetail->GetDisplayName().
-	                                                                ToString()),
-	                                          FName(GetDisplayName().ToString()));
+	                                          CategoryDetail->GetName(),
+	                                          GetName());
 }

@@ -14,8 +14,14 @@ FText FCategoryDetail::GetDisplayName() const
 	return SettingCategory->GetDisplayName();
 }
 
+FName FCategoryDetail::GetName() const
+{
+	return SettingCategory->GetName();
+}
+
 void FCategoryDetail::DoAction() const
 {
-	SettingsModule.ShowViewer(FName("Editor"), FName(GetDisplayName().ToString()),
-	                          FName(FirstSettingsSection->GetDisplayName().ToString()));
+	SettingsModule.ShowViewer(FName("Editor"),
+	                          GetName(),
+	                          FirstSettingsSection->GetName());
 }

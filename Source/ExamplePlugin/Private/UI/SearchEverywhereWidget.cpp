@@ -3,7 +3,7 @@
 #include "EditorStyleSet.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Multithreading/Searcher.h"
-#include "SettingsData/AbstractSettingDetail.h"
+#include "SettingsData/Details/AbstractSettingDetail.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Input/SEditableText.h"
 #include "Widgets/Views/SListView.h"

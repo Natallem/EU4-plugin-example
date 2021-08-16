@@ -3,7 +3,9 @@
 #pragma once
 
 #include "InputCoreTypes.h"
-#include "Multithreading/CallbackHandler.h"
+#include "MessageEndpoint.h"
+#include "MessageEndpointBuilder.h"
+#include "Multithreading/ResultItemFoundMsg.h"
 #include "Multithreading/Searcher.h"
 
 struct FKeyEvent;
@@ -22,16 +24,23 @@ public:
 	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
 
 private:
-	friend SSearchEverywhereWindow;
-	uint32 LastKeyboardUser = 0;
-	FKey LastKeyboardUserInput;
+	void HandleFoundWords(const FResultItemFoundMsg& Message,
+	                      const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& Context);
+
 	TSharedPtr<FUICommandList> PluginCommands;
 	TWeakPtr<SSearchEverywhereWindow> PluginWindow;
 	FText PreviousSearchRequest;
+
 	FDelegateHandle OnApplicationPreInputKeyDownListenerHandle;
+	uint32 LastKeyboardUserIndex = 0;
+	FKey LastKeyboardUserInput;
+
 	constexpr static int32 ResultChunkSize = 100; // todo change
-	TSharedRef<FCallbackHandler, ESPMode::ThreadSafe> CallbackHandler = MakeShared<
-		FCallbackHandler, ESPMode::ThreadSafe>(PluginWindow);
+	TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint = FMessageEndpoint::Builder(
+			TEXT("ResultItemFoundEndpoint"))
+		.Handling<FResultItemFoundMsg>(this, &FExamplePluginModule::HandleFoundWords);
 	TSharedRef<FSearcher> Searcher = MakeShared<FSearcher>(ResultChunkSize,
-	                                                       CallbackHandler->GetMessageEndpoint());
+	                                                       MessageEndpoint);
+
+	friend SSearchEverywhereWindow;
 };

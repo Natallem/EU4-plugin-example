@@ -19,12 +19,15 @@ FText FPropertyDetail::GetDisplayName() const
 	return Property->GetDisplayNameText();
 }
 
+FName FPropertyDetail::GetName() const
+{
+	return FName();
+}
+
 void FPropertyDetail::DoAction() const
 {
 	InnerCategoryDetail->SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
 		FName("Editor"),
-		FName(InnerCategoryDetail->SectionDetail->CategoryDetail->GetDisplayName().
-		                           ToString()),
-		FName(InnerCategoryDetail->SectionDetail->GetDisplayName().ToString()));
+		InnerCategoryDetail->SectionDetail->CategoryDetail->GetName(),
+		InnerCategoryDetail->SectionDetail->GetName());
 }
-

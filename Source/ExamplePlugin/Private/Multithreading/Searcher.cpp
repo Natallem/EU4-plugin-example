@@ -1,7 +1,7 @@
 #include "Searcher.h"
 
 #include "SearchTask.h"
-#include "Messages/WordsFoundMessage.h"
+#include "ResultItemFoundMsg.h"
 
 //todo think about reserve for array
 FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint)
@@ -216,7 +216,7 @@ void FSearcher::NotifyMainThread()
 		IsNotifiedMainThread = true;
 		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
 		{
-			CurrentMessageEndpoint->Send(new FWordsFound(), CurrentMessageEndpoint->GetAddress());
+			CurrentMessageEndpoint->Send(new FResultItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
 		}
 	}
 }

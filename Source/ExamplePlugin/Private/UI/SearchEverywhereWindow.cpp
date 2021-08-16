@@ -9,7 +9,7 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
                                         TWeakPtr<SWidget> InPreviousFocusedWidget)
 {
 	PreviousFocusedWidget = InPreviousFocusedWidget;
-	
+
 	const TSharedPtr<SWindow> MainFrameWindow = IMainFrameModule::Get().GetParentWindow();
 	const FVector2D ParentScreenSize = MainFrameWindow->GetSizeInScreen();
 	const float ParentDPIScaleFactor = MainFrameWindow->GetDPIScaleFactor();
@@ -103,10 +103,9 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 		{
 			return FReply::Handled();
 		}
-
-		if (PreviousFocusedWidget.IsValid() && PreviousFocusedWidget.Pin().IsValid())
+		if (const TSharedPtr<SWidget> ValidPreviousFocusedWidget = PreviousFocusedWidget.Pin())
 		{
-			if (PreviousFocusedWidget.Pin()->OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
+			if (ValidPreviousFocusedWidget->OnKeyDown(MyGeometry, InKeyEvent).IsEventHandled())
 			{
 				RequestDestroyWindow();
 				return FReply::Handled();

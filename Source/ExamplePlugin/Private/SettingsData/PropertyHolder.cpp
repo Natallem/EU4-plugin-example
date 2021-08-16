@@ -1,15 +1,15 @@
 #include "PropertyHolder.h"
 
-#include "CategoryDetail.h"
+#include "Details/CategoryDetail.h"
 #include "ISettingsContainer.h"
 #include "ISettingsModule.h"
-#include "InnerCategoryDetail.h"
-#include "PropertyDetail.h"
-#include "SectionDetail.h"
+#include "Details/InnerCategoryDetail.h"
+#include "Details/PropertyDetail.h"
+#include "Details/SectionDetail.h"
 #include "Multithreading/SearchTask.h"
 #include "Misc/FileHelper.h"
 #include "PropertyEditor/Private/SDetailsView.h"
-#include "AbstractSettingDetail.h"
+#include "Details/AbstractSettingDetail.h"
 #include "ISettingsEditorModel.h"
 #include "ISettingsEditorModule.h"
 
@@ -310,7 +310,8 @@ void FPropertyHolder::ForceUpdateSettings() const
 	{
 		ISettingsEditorModule& SettingsEditorModule = FModuleManager::GetModuleChecked<ISettingsEditorModule>(
 			"SettingsEditor");
-		const ISettingsEditorModelRef SettingsEditorModel = SettingsEditorModule.CreateModel(SettingsContainer.ToSharedRef());
+		const ISettingsEditorModelRef SettingsEditorModel = SettingsEditorModule.CreateModel(
+			SettingsContainer.ToSharedRef());
 
 		SettingsEditorModule.CreateEditor(SettingsEditorModel);
 	}

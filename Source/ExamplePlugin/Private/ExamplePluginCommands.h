@@ -9,9 +9,10 @@
 class FExamplePluginCommands : public TCommands<FExamplePluginCommands>
 {
 public:
-
 	FExamplePluginCommands()
-		: TCommands<FExamplePluginCommands>(TEXT("ExamplePlugin"), NSLOCTEXT("Contexts", "ExamplePlugin", "ExamplePlugin Plugin"), NAME_None, FExamplePluginStyle::GetStyleSetName())
+		: TCommands<FExamplePluginCommands>(
+			TEXT("ExamplePlugin"), NSLOCTEXT("Contexts", "ExamplePlugin", "ExamplePlugin Plugin"), NAME_None,
+			FExamplePluginStyle::GetStyleSetName())
 	{
 	}
 
@@ -19,5 +20,5 @@ public:
 	virtual void RegisterCommands() override;
 
 public:
-	TSharedPtr< FUICommandInfo > OpenPluginWindow;
+	TSharedPtr<FUICommandInfo> OpenPluginWindow;
 };
