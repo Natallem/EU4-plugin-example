@@ -29,6 +29,7 @@ void FInnerCategoryDetail::DoAction() const
 		FName("Editor"),
 		SectionDetail->CategoryDetail->GetName(),
 		SectionDetail->GetName());
+	Foo();
 }
 
 FString FInnerCategoryDetail::GetPath() const

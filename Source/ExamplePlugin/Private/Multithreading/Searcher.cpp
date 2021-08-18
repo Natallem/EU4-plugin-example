@@ -131,7 +131,6 @@ void FSearcher::EnsureCompletion()
 	}
 }
 
-
 bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 {
 	if (FindResultTask.PArray.Num() == 0)
@@ -163,7 +162,6 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 	}
 	return false;
 }
-
 
 bool FSearcher::FillBuffer(FSearchTask& Task) const
 {

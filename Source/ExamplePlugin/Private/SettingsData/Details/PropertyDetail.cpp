@@ -1,7 +1,6 @@
 #include "PropertyDetail.h"
 
 #include "ISettingsModule.h"
-#include "Widgets/Input/SButton.h"
 
 #include "CategoryDetail.h"
 #include "InnerCategoryDetail.h"
@@ -31,6 +30,7 @@ void FPropertyDetail::DoAction() const
 		FName("Editor"),
 		InnerCategoryDetail->SectionDetail->CategoryDetail->GetName(),
 		InnerCategoryDetail->SectionDetail->GetName());
+	Foo();
 }
 
 FString FPropertyDetail::GetPath() const

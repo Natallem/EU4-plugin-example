@@ -7,7 +7,7 @@
 #include "Widgets/Input/SButton.h"
 
 class SWidget;
-
+class SDetailsView;
 class FAbstractSettingDetail
 {
 public:
@@ -18,35 +18,14 @@ public:
 	virtual void DoAction() const = 0;
 	virtual FString GetPath() const = 0;
 
-	virtual TSharedRef<SWidget> GetRowWidget() const
-	{
-		if (!RowWidget.IsValid())
-		{
-			RowWidget = CreateRowWidget();
-		}
-		return RowWidget.ToSharedRef();
-	}
+	virtual TSharedRef<SWidget> GetRowWidget() const;
 
 protected:
-	virtual TSharedPtr<SWidget> CreateRowWidget() const
-	{
-		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				SNew(STextBlock)
-				.Text(GetDisplayName())
-			]
-			+ SHorizontalBox::Slot()
-			  .HAlign(HAlign_Right)
-			  .FillWidth(0.25)
-			[
-				SNew(STextBlock)
-				.ColorAndOpacity(FColor::FromHex("#808080"))
-				.Text(FText::FromString(GetPath()))
-			];
-	}
+	virtual TSharedPtr<SWidget> CreateRowWidget() const;
 
+	void Foo() const;
 	mutable TSharedPtr<SWidget> RowWidget;
 	FString Delimiter = "|";
+private:
+	void SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const;
 };
