@@ -76,7 +76,7 @@ TSharedPtr<SWidget> FAbstractSettingDetail::CreateRowWidget() const
 		];
 }
 
-void FAbstractSettingDetail::Foo() const
+TSharedPtr<SDetailsView> FAbstractSettingDetail::GetSDetailsView() const
 {
 	const TSharedPtr<SDockTab> EditorSettingsTab = FGlobalTabmanager::Get()->FindExistingLiveTab(
 		FName("EditorSettings"));
@@ -85,11 +85,10 @@ void FAbstractSettingDetail::Foo() const
 		EditorSettingsTab->GetContent());
 	const TSharedPtr<IDetailsView> DetailsViewPrivateField = (*SettingsEditorWidget).*get(
 		Getter_SettingsView_From_SSettingsEditor());
-	SetTextInSearchBox(StaticCastSharedPtr<SDetailsView>(DetailsViewPrivateField), GetDisplayName());
+	return StaticCastSharedPtr<SDetailsView>(DetailsViewPrivateField);
 }
 
-
-void FAbstractSettingDetail::SetTextInSearchBox(const TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const
+void FAbstractSettingDetail::SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const
 {
 	const TSharedPtr<SDetailsViewBase> DetailsViewBasePtr = StaticCastSharedPtr<SDetailsViewBase>(DetailsViewPtr);
 	FDetailFilter& DetailsFilterPrivateField = (*DetailsViewBasePtr).*get(Getter_CurrentFilter_From_SDetailsViewBase());
@@ -98,3 +97,4 @@ void FAbstractSettingDetail::SetTextInSearchBox(const TSharedPtr<SDetailsView> D
 	SearchBoxPrivateField->SetText(newText);
 	DetailsViewPtr->RerunCurrentFilter();
 }
+

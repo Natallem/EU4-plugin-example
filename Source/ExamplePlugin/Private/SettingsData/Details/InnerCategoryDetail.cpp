@@ -29,7 +29,7 @@ void FInnerCategoryDetail::DoAction() const
 		FName("Editor"),
 		SectionDetail->CategoryDetail->GetName(),
 		SectionDetail->GetName());
-	Foo();
+	SetTextInSearchBox(GetSDetailsView(), GetDisplayName());
 }
 
 FString FInnerCategoryDetail::GetPath() const

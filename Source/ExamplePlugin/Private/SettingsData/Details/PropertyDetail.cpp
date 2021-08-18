@@ -30,7 +30,7 @@ void FPropertyDetail::DoAction() const
 		FName("Editor"),
 		InnerCategoryDetail->SectionDetail->CategoryDetail->GetName(),
 		InnerCategoryDetail->SectionDetail->GetName());
-	Foo();
+	SetTextInSearchBox(GetSDetailsView(), GetDisplayName());
 }
 
 FString FPropertyDetail::GetPath() const

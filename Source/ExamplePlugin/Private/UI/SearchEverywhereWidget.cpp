@@ -10,6 +10,7 @@
 #include "Widgets/Layout/SScrollBorder.h"
 #include "Widgets/SWindow.h"
 #include "SearchEverywhereWindow.h"
+#include "Widgets/Input/SButton.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 

@@ -1,10 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Widgets/SBoxPanel.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Input/SButton.h"
 
 class SWidget;
 class SDetailsView;
@@ -22,10 +20,9 @@ public:
 
 protected:
 	virtual TSharedPtr<SWidget> CreateRowWidget() const;
+	TSharedPtr<SDetailsView> GetSDetailsView() const;
+	void SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const;
 
-	void Foo() const;
 	mutable TSharedPtr<SWidget> RowWidget;
 	FString Delimiter = "|";
-private:
-	void SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const;
 };
