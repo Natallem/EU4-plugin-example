@@ -1,29 +1,24 @@
 #include "InnerCategoryDetail.h"
 
 #include "ISettingsModule.h"
-#include "Widgets/Input/SButton.h"
 
 #include "CategoryDetail.h"
 #include "SectionDetail.h"
 
-FInnerCategoryDetail::FInnerCategoryDetail(FProperty* InProperty, const TSharedRef<FSectionDetail>& InSectionDetail)
-	: SectionDetail(InSectionDetail)
+FInnerCategoryDetail::FInnerCategoryDetail(const TSharedRef<FSectionDetail>& SectionDetail,
+	const FText& CategoryDisplayName, const TWeakPtr<FDetailCategoryImpl>& CategoryTreeNode, int SettingsIndex): SectionDetail(SectionDetail),
+	InnerCategoryDisplayName(CategoryDisplayName),
+	CategoryTreeNode(CategoryTreeNode),
+	SettingsIndex(SettingsIndex)
 {
-	CategoryDisplayName = FText::AsCultureInvariant(
-		FName::NameToDisplayString(InProperty->GetMetaData(TEXT("Category")), false));
 }
 
 FText FInnerCategoryDetail::GetDisplayName() const
 {
-	return CategoryDisplayName;
+	return InnerCategoryDisplayName;
 }
 
-FName FInnerCategoryDetail::GetName() const
-{
-	return FName();
-}
-
-void FInnerCategoryDetail::DoAction() const
+void FInnerCategoryDetail::DoAction()
 {
 	SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
 		FName("Editor"),

@@ -5,26 +5,25 @@
 #include "CategoryDetail.h"
 #include "InnerCategoryDetail.h"
 #include "SectionDetail.h"
+#include "PropertyEditor/Private/SDetailsViewBase.h"
 
-FPropertyDetail::FPropertyDetail(UObject* InSettingObject, FProperty* InProperty,
-                                 const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail):
-	SettingObject(InSettingObject),
-	Property(InProperty),
-	InnerCategoryDetail(InnerCategoryDetail)
+
+FPropertyDetail::FPropertyDetail(const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail,
+	const TWeakPtr<FDetailTreeNode>& SettingDetail, const FText& PropertyDisplayName, int SettingIndex,
+	bool bIsAdvanced): InnerCategoryDetail(InnerCategoryDetail),
+	                   SettingDetail(SettingDetail),
+	                   PropertyDisplayName(PropertyDisplayName),
+	                   SettingIndex(SettingIndex),
+	                   bIsAdvanced(bIsAdvanced)
 {
 }
 
 FText FPropertyDetail::GetDisplayName() const
 {
-	return Property->GetDisplayNameText();
+	return PropertyDisplayName;
 }
 
-FName FPropertyDetail::GetName() const
-{
-	return FName();
-}
-
-void FPropertyDetail::DoAction() const
+void FPropertyDetail::DoAction() 
 {
 	InnerCategoryDetail->SectionDetail->CategoryDetail->SettingsModule.ShowViewer(
 		FName("Editor"),

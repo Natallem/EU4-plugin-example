@@ -68,7 +68,6 @@ private:
 	/** Send message, that new request item found. Does not notify main thread twice. Calls under lock*/
 	void NotifyMainThread();
 
-	FPropertyHolder& PropertyHolder;
 	FEventRef WakeUpWorkerEvent;
 	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
 	uint32 ChunkSize;

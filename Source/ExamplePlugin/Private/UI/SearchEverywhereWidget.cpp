@@ -259,7 +259,7 @@ FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCate
 
 FReply SSearchEverywhereWidget::LogAllProperties()
 {
-	FPropertyHolder::Get().LogAllProperties();
+	FPropertyHolder::GetSettingsData<true>();
 	return FReply::Handled();
 }
 

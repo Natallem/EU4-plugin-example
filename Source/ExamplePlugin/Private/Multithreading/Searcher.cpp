@@ -4,8 +4,7 @@
 #include "ResultItemFoundMsg.h"
 
 FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint)
-	: PropertyHolder(FPropertyHolder::Get()),
-	  MessageEndpoint(MessageEndpoint),
+	: MessageEndpoint(MessageEndpoint),
 	  ChunkSize(ChunkSize),
 	  InputHandler(0, FString(), 0, 0),
 	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal))
@@ -139,7 +138,7 @@ bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 	}
 	while (FindResultTask.DesiredResultSize > 0)
 	{
-		TOptional<uint64> FoundWord = PropertyHolder.FindNextWord(FindResultTask, RequestCounter);
+		TOptional<uint64> FoundWord = FPropertyHolder::Get().FindNextWord(FindResultTask, RequestCounter);
 		if (FoundWord)
 		{
 			--FindResultTask.DesiredResultSize;
@@ -169,7 +168,7 @@ bool FSearcher::FillBuffer(FSearchTask& Task) const
 	{
 		while (Task.DesiredBufferSize > 0)
 		{
-			TOptional<RequiredType> FoundWord = PropertyHolder.FindNextWord(Task, RequestCounter);
+			TOptional<RequiredType> FoundWord = FPropertyHolder::Get().FindNextWord(Task, RequestCounter);
 			if (FoundWord)
 			{
 				--Task.DesiredBufferSize;

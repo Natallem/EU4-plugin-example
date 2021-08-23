@@ -13,6 +13,8 @@ class FToolBarBuilder;
 class FMenuBuilder;
 class FUICommandList;
 class SSearchEverywhereWindow;
+class SWindow;
+
 
 class FExamplePluginModule final : public IModuleInterface
 {
@@ -24,6 +26,7 @@ public:
 	void OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent);
 
 private:
+	void OnMainFrameLoaded(TSharedPtr<SWindow> InRootWindow, bool bIsNewProjectWindow);
 	void HandleFoundWords(const FResultItemFoundMsg& InMessage,
 	                      const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& InContext);
 

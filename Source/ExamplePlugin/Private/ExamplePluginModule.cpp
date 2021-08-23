@@ -5,11 +5,14 @@
 #include "LevelEditor.h"
 
 #include "ExamplePluginCommands.h"
+#include "Interfaces/IMainFrameModule.h"
 #include "UI/ExamplePluginStyle.h"
 #include "UI/SearchEverywhereWindow.h"
 #include "UI/SearchEverywhereWidget.h"
 #include "Multithreading/Searcher.h"
 
+
+class IMainFrameModule;
 static const FName ExamplePluginTabName("ExamplePlugin");
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
@@ -34,6 +37,9 @@ void FExamplePluginModule::StartupModule()
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
 	//todo add to asset editor
+	IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
+	MainFrameModule.OnMainFrameCreationFinished().AddRaw(this, &FExamplePluginModule::OnMainFrameLoaded);
+
 }
 
 
@@ -49,6 +55,12 @@ void FExamplePluginModule::ShutdownModule()
 	FExamplePluginCommands::Unregister();
 	Searcher->EnsureCompletion();
 	FMessageEndpoint::SafeRelease(MessageEndpoint);
+	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+	{
+		IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
+		MainFrameModule.OnMainFrameCreationFinished().RemoveAll(this);
+	}
+	
 }
 
 void FExamplePluginModule::PluginButtonClicked()
@@ -81,6 +93,11 @@ void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent&
 		LastKeyboardUserIndex = InKeyEvent.GetUserIndex();
 		LastKeyboardUserInput = InKeyEvent.GetKey();
 	}
+}
+
+void FExamplePluginModule::OnMainFrameLoaded(TSharedPtr<SWindow> InRootWindow, bool bIsNewProjectWindow)
+{
+	FPropertyHolder::Get();
 }
 
 void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& InMessage,

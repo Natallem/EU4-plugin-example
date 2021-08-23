@@ -1,23 +1,20 @@
 #include "AbstractSettingDetail.h"
 
 #include "CoreMinimal.h"
-#include "Widgets/SBoxPanel.h"
-#include "Templates/SharedPointer.h"
-#include "Widgets/Text/STextBlock.h"
-#include "Widgets/Input/SButton.h"
-
-
 #include "IDetailsView.h"
-#include "Widgets/Docking/SDockTab.h"
-#include "Widgets/Input/SSearchBox.h"
-#include "Framework/Docking/TabManager.h"
-#include "SettingsEditor/Private/Widgets/SSettingsEditor.h"
-#include "PropertyPath.h"
 #include "PropertyEditor/Private/SDetailsView.h"
 #include "PropertyEditor/Private/SDetailsViewBase.h"
+#include "SettingsEditor/Private/Widgets/SSettingsEditor.h"
+#include "Templates/SharedPointer.h"
+#include "Widgets/Docking/SDockTab.h"
+#include "Widgets/Input/SSearchBox.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
+
+DEFINE_LOG_CATEGORY(LogSearchSettingDetail);
 
 template <typename Tag, typename Tag::type M>
-struct Rob
+struct FHelperPrivateField
 {
 	friend typename Tag::type get(Tag)
 	{
@@ -25,12 +22,13 @@ struct Rob
 	}
 };
 
-// tag used to access SSettingsEditor::PrivateField
 struct Getter_SettingsView_From_SSettingsEditor
 {
 	typedef TSharedPtr<IDetailsView> SSettingsEditor::* type;
 	friend type get(Getter_SettingsView_From_SSettingsEditor);
 };
+
+template struct FHelperPrivateField<Getter_SettingsView_From_SSettingsEditor, &SSettingsEditor::SettingsView>;
 
 struct Getter_CurrentFilter_From_SDetailsViewBase
 {
@@ -38,15 +36,20 @@ struct Getter_CurrentFilter_From_SDetailsViewBase
 	friend type get(Getter_CurrentFilter_From_SDetailsViewBase);
 };
 
+template struct FHelperPrivateField<Getter_CurrentFilter_From_SDetailsViewBase, &SDetailsViewBase::CurrentFilter>;
+
 struct Getter_SearchBox_From_SDetailsViewBase
 {
 	typedef TSharedPtr<SSearchBox> SDetailsViewBase::* type;
 	friend type get(Getter_SearchBox_From_SDetailsViewBase);
 };
 
-template struct Rob<Getter_SettingsView_From_SSettingsEditor, &SSettingsEditor::SettingsView>;
-template struct Rob<Getter_CurrentFilter_From_SDetailsViewBase, &SDetailsViewBase::CurrentFilter>;
-template struct Rob<Getter_SearchBox_From_SDetailsViewBase, &SDetailsViewBase::SearchBox>;
+template struct FHelperPrivateField<Getter_SearchBox_From_SDetailsViewBase, &SDetailsViewBase::SearchBox>;
+
+FName FAbstractSettingDetail::GetName() const
+{
+	return FName();
+}
 
 TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget() const
 {
@@ -88,13 +91,13 @@ TSharedPtr<SDetailsView> FAbstractSettingDetail::GetSDetailsView() const
 	return StaticCastSharedPtr<SDetailsView>(DetailsViewPrivateField);
 }
 
-void FAbstractSettingDetail::SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText) const
+void FAbstractSettingDetail::SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText)
 {
 	const TSharedPtr<SDetailsViewBase> DetailsViewBasePtr = StaticCastSharedPtr<SDetailsViewBase>(DetailsViewPtr);
 	FDetailFilter& DetailsFilterPrivateField = (*DetailsViewBasePtr).*get(Getter_CurrentFilter_From_SDetailsViewBase());
 	DetailsFilterPrivateField.FilterStrings.Empty();
-	const TSharedPtr<SSearchBox>& SearchBoxPrivateField = (*DetailsViewBasePtr).*get(Getter_SearchBox_From_SDetailsViewBase());
+	const TSharedPtr<SSearchBox>& SearchBoxPrivateField = (*DetailsViewBasePtr).*get(
+		Getter_SearchBox_From_SDetailsViewBase());
 	SearchBoxPrivateField->SetText(newText);
 	DetailsViewPtr->RerunCurrentFilter();
 }
-

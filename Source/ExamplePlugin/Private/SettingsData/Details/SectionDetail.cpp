@@ -5,16 +5,21 @@
 #include "PropertyEditor/Private/SDetailsView.h"
 #include "PropertyPath.h"
 
-FSectionDetail::FSectionDetail(const ISettingsSectionPtr& InSettingsSection,
-                               const TSharedRef<FCategoryDetail>& InCategoryDetail)
-	: CategoryDetail(InCategoryDetail),
-	  SettingsSection(InSettingsSection)
+FSectionDetail::FSectionDetail(const TSharedRef<FCategoryDetail>& CategoryDetail,
+                               const ISettingsSectionPtr& SettingsSection,
+                               const TWeakPtr<FDetailMultiTopLevelObjectRootNode>& SettingTreeNode,
+                               int SettingIndex)
+	: CategoryDetail(CategoryDetail),
+	  SettingsSection(SettingsSection),
+	  SettingTreeNode(SettingTreeNode),
+	  SettingIndex(SettingIndex)
 {
+	SectionDisplayName = SettingsSection->GetDisplayName();
 }
 
 FText FSectionDetail::GetDisplayName() const
 {
-	return SettingsSection->GetDisplayName();
+	return SectionDisplayName;
 }
 
 FName FSectionDetail::GetName() const
@@ -22,13 +27,11 @@ FName FSectionDetail::GetName() const
 	return SettingsSection->GetName();
 }
 
-void FSectionDetail::DoAction() const
+void FSectionDetail::DoAction()
 {
 	CategoryDetail->SettingsModule.ShowViewer(FName("Editor"),
 	                                          CategoryDetail->GetName(),
 	                                          GetName());
-	TSharedPtr<SDetailsView> DetailsView = GetSDetailsView();
-	 TArray<FPropertyPath> PropertyPaths = DetailsView->GetPropertiesInOrderDisplayed();
 }
 
 FString FSectionDetail::GetPath() const

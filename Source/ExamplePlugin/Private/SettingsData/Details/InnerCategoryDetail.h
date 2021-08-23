@@ -7,18 +7,21 @@
 class SWidget;
 class FProperty;
 class FSectionDetail;
+class FDetailCategoryImpl;
 
 class FInnerCategoryDetail : public FAbstractSettingDetail
 {
 public:
-	FInnerCategoryDetail(FProperty* InProperty, const TSharedRef<FSectionDetail>& InSectionDetail);
+	FInnerCategoryDetail(const TSharedRef<FSectionDetail>& SectionDetail, const FText& InnerCategoryDisplayName,
+		const TWeakPtr<FDetailCategoryImpl>& CategoryTreeNode, int SettingsIndex);
 
 	virtual FText GetDisplayName() const override;
-	virtual FName GetName() const override;
-	virtual void DoAction() const override;
+	virtual void DoAction() override;
 	virtual FString GetPath() const override;
 
 	TSharedRef<FSectionDetail> SectionDetail;
 private:
-	FText CategoryDisplayName;
+	FText InnerCategoryDisplayName;
+	TWeakPtr<FDetailCategoryImpl> CategoryTreeNode;
+	int SettingsIndex;
 };
