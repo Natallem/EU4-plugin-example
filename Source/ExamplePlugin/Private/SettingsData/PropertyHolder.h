@@ -48,8 +48,6 @@ public:
 
 	static FPropertyHolder& Get();
 
-	static TArray<int> CreatePArray(const FString& InPattern);
-
 	TOptional<RequiredType> FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter);
 
 	TSharedRef<FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
@@ -87,9 +85,6 @@ private:
 	                                   FSettingsDataCollection& OutResult);
 
 	static FString GetPropertyName(TSharedRef<FDetailTreeNode> DetailNode);
-
-	static bool IsSatisfiedRequest(const FString& InStringToFindPattern, const FString& InPattern,
-	                               const TArray<int>& PArray);
 
 	static void WriteLog(const FString& Text, bool bIsAppend = true);
 

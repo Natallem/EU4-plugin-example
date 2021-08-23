@@ -47,7 +47,6 @@ struct TInputHandler
 	int32 DesiredBufferSize;
 	/** True then all data found and main thead notified about this */
 	bool bIsProcessRequestFinished;
-	TArray<int> PArray;
 	int32 NextIndexToCheck = 0;
 	int32 FoundOutputCounter = 0;
 	TArray<RequiredType> OutputToGive;

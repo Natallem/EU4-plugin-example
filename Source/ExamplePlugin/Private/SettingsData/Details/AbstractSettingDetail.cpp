@@ -53,30 +53,21 @@ FName FAbstractSettingDetail::GetName() const
 
 TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget() const
 {
-	if (!RowWidget.IsValid())
-	{
-		RowWidget = CreateRowWidget();
-	}
-	return RowWidget.ToSharedRef();
-}
-
-TSharedPtr<SWidget> FAbstractSettingDetail::CreateRowWidget() const
-{
 	return SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SNew(STextBlock)
-			.Text(GetDisplayName())
-		]
-		+ SHorizontalBox::Slot()
-		  .HAlign(HAlign_Right)
-		  .FillWidth(0.25)
-		[
-			SNew(STextBlock)
-				.ColorAndOpacity(FColor::FromHex("#808080"))
-				.Text(FText::FromString(GetPath()))
-		];
+    		+ SHorizontalBox::Slot()
+    		.AutoWidth()
+    		[
+    			SNew(STextBlock)
+    			.Text(GetDisplayName())
+    		]
+    		+ SHorizontalBox::Slot()
+    		  .HAlign(HAlign_Right)
+    		  .FillWidth(0.25)
+    		[
+    			SNew(STextBlock)
+    				.ColorAndOpacity(FColor::FromHex("#808080"))
+    				.Text(FText::FromString(GetPath()))
+    		];
 }
 
 TSharedPtr<SDetailsView> FAbstractSettingDetail::GetSDetailsView() const

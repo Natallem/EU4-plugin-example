@@ -21,10 +21,7 @@ public:
 	virtual TSharedRef<SWidget> GetRowWidget() const;
 
 protected:
-	virtual TSharedPtr<SWidget> CreateRowWidget() const;
 	TSharedPtr<SDetailsView> GetSDetailsView() const;
 	void SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText);
-
-	mutable TSharedPtr<SWidget> RowWidget;
 	FString Delimiter = "|";
 };

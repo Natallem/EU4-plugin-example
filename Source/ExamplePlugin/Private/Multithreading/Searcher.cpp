@@ -52,7 +52,6 @@ uint32 FSearcher::Run()
 						            MoveTemp(InputHandler.InputRequest),
 						            InputHandler.DesiredOutputSize - InputHandler.FoundOutputCounter,
 						            InputHandler.DesiredBufferSize - InputHandler.Buffer.Num(),
-						            MoveTemp(InputHandler.PArray),
 						            InputHandler.NextIndexToCheck);
 				}
 			}
@@ -132,10 +131,6 @@ void FSearcher::EnsureCompletion()
 
 bool FSearcher::ExecuteFindResultTask(FSearchTask& FindResultTask)
 {
-	if (FindResultTask.PArray.Num() == 0)
-	{
-		FindResultTask.PArray = FPropertyHolder::CreatePArray(FindResultTask.RequestString);
-	}
 	while (FindResultTask.DesiredResultSize > 0)
 	{
 		TOptional<uint64> FoundWord = FPropertyHolder::Get().FindNextWord(FindResultTask, RequestCounter);
@@ -190,7 +185,6 @@ bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 	{
 		ensureAlways(InputHandler.Id == Task.TaskId);
 		InputHandler.InputRequest = MoveTemp((Task.RequestString));
-		InputHandler.PArray = MoveTemp(Task.PArray);
 		InputHandler.NextIndexToCheck = Task.NextIndexToCheck;
 		if (Task.bIsCompleteSearching && Task.Buffer.Num() == 0)
 		{

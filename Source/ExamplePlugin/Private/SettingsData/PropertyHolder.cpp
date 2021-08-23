@@ -135,20 +135,6 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TArray<int> FPropertyHolder::CreatePArray(const FString& InPattern)
-{
-	TArray<int> Result;
-	Result.Init(-1, InPattern.Len());
-	for (int r = 1, l = -1; r < InPattern.Len(); r++)
-	{
-		while (l != -1 && InPattern[l + 1] != InPattern[r])
-			l = Result[l];
-		if (InPattern[l + 1] == InPattern[r])
-			Result[r] = ++l;
-	}
-	return Result;
-}
-
 TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter)
 {
 	static const int IterationBeforeCheck = 100; // Parameter
@@ -164,7 +150,7 @@ TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& OutTask, cons
 			}
 			IterationCounter = 0;
 		}
-		if (IsSatisfiedRequest(Data[i]->GetDisplayName().ToString(), OutTask.RequestString, OutTask.PArray))
+		if (Data[i]->GetDisplayName().ToString().Find(*OutTask.RequestString) != -1)
 		{
 			OutTask.NextIndexToCheck = i + 1;
 			return i;
@@ -422,25 +408,6 @@ FString FPropertyHolder::GetPropertyName(TSharedRef<FDetailTreeNode> DetailNode)
 	return PropertyName;
 }
 
-bool FPropertyHolder::IsSatisfiedRequest(const FString& InStringToFindPattern, const FString& InPattern,
-                                         const TArray<int>& PArray)
-{
-	int Tail = -1;
-
-	for (int i = 0; i < InStringToFindPattern.Len(); i++)
-	{
-		while (Tail != -1 && InStringToFindPattern[i] != InPattern[Tail + 1])
-			Tail = PArray[Tail];
-		if (InStringToFindPattern[i] == InPattern[Tail + 1])
-			Tail++;
-		if (Tail == InPattern.Len() - 1)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
 void FPropertyHolder::WriteLog(const FString& Text, bool bIsAppend)
 {
 	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog_temp.txt";
@@ -448,4 +415,4 @@ void FPropertyHolder::WriteLog(const FString& Text, bool bIsAppend)
 	                              (bIsAppend) ? FILEWRITE_Append : FILEWRITE_None);
 }
 
-const FName FPropertyHolder::EditorSettingsName = TEXT("EditorSettings"); 
+const FName FPropertyHolder::EditorSettingsName = TEXT("EditorSettings");
