@@ -105,7 +105,7 @@ void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& InMessage
 {
 	if (const TSharedPtr<SSearchEverywhereWindow> Window = PluginWindow.Pin())
 	{
-		Window->GetSearchEverywhereWidget()->UpdateShownResults();
+		Window->GetSearchEverywhereWidget()->ProcessMessage(InMessage);
 	}
 }
 

@@ -65,15 +65,12 @@ private:
 	 */
 	bool AllWordsFound(int32 InputId);
 
-	/** Send message, that new request item found. Does not notify main thread twice. Calls under lock*/
-	void NotifyMainThread();
-
 	FEventRef WakeUpWorkerEvent;
 	TWeakPtr<FMessageEndpoint, ESPMode::ThreadSafe> MessageEndpoint;
 	uint32 ChunkSize;
 	FInputHandler InputHandler;
 	FThreadSafeCounter RequestCounter;
-	FCriticalSection InputOperationSection;
+	FCriticalSection CriticalSection;
 	bool bIsNotifiedMainThread = false;
 	FThreadSafeBool bShouldStopThread = false;
 	TUniquePtr<FRunnableThread> Thread;

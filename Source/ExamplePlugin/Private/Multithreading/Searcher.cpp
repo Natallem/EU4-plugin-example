@@ -37,12 +37,21 @@ uint32 FSearcher::Run()
 		}
 		TOptional<FSearchTask> FindResultTask;
 		{
-			FScopeLock ScopeLock(&InputOperationSection);
+			FScopeLock ScopeLock(&CriticalSection);
 			if (!InputHandler.bIsProcessRequestFinished)
 			{
 				if (InputHandler.MoveFromBufferToMainResult())
 				{
-					NotifyMainThread();
+					if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint
+						.Pin())
+					{
+						ensureAlways(RequestCounter.GetValue() == InputHandler.Id);
+						CurrentMessageEndpoint->Send(
+							new FResultItemFoundMsg(InputHandler.bIsProcessRequestFinished,
+							                        MoveTemp(InputHandler.OutputToGive)),
+							CurrentMessageEndpoint->GetAddress());
+						InputHandler.OutputToGive.Reset();
+					}
 				};
 				// if need to find more or need to fill buffer
 				if (InputHandler.DesiredOutputSize > InputHandler.FoundOutputCounter)
@@ -80,7 +89,7 @@ void FSearcher::SetInput(const FString& NewInput)
 	bool IsEmptyInput;
 	int32 Id;
 	{
-		FScopeLock ScopeLock(&InputOperationSection);
+		FScopeLock ScopeLock(&CriticalSection);
 		InputHandler = FInputHandler(RequestCounter.GetValue(), NewInput, ChunkSize, ChunkSize);
 		IsEmptyInput = InputHandler.bIsProcessRequestFinished;
 		Id = InputHandler.Id;
@@ -100,7 +109,7 @@ TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
 	TArray<RequiredType> ReturnResult;
 	bool bIsSearchingFinished;
 	{
-		FScopeLock ScopeLock(&InputOperationSection);
+		FScopeLock ScopeLock(&CriticalSection);
 		ensureAlways(RequestCounter.GetValue() == InputHandler.Id);
 		ReturnResult = MoveTemp(InputHandler.OutputToGive);
 		bIsSearchingFinished = InputHandler.bIsProcessRequestFinished;
@@ -113,7 +122,7 @@ TPair<bool, TArray<RequiredType>> FSearcher::GetRequestData()
 void FSearcher::FindMoreDataResult()
 {
 	{
-		FScopeLock ScopeLock(&InputOperationSection);
+		FScopeLock ScopeLock(&CriticalSection);
 		ensureAlways(InputHandler.Id == RequestCounter.GetValue());
 		InputHandler.DesiredOutputSize += ChunkSize;
 	}
@@ -180,7 +189,7 @@ bool FSearcher::FillBuffer(FSearchTask& Task) const
 
 bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 {
-	FScopeLock ScopeLock(&InputOperationSection);
+	FScopeLock ScopeLock(&CriticalSection);
 	if (Task.TaskId == RequestCounter.GetValue())
 	{
 		ensureAlways(InputHandler.Id == Task.TaskId);
@@ -208,12 +217,17 @@ bool FSearcher::SaveTaskStateToResult(FSearchTask& Task)
 
 bool FSearcher::AddFoundItemToResult(RequiredType&& Item, int32 TaskId)
 {
-	FScopeLock ScopeLock(&InputOperationSection);
+	FScopeLock ScopeLock(&CriticalSection);
 	if (TaskId == RequestCounter.GetValue() && InputHandler.Id == TaskId)
 	{
-		InputHandler.OutputToGive.Add(MoveTemp(Item));
+		// InputHandler.OutputToGive.Add(MoveTemp(Item));
 		++InputHandler.FoundOutputCounter;
-		NotifyMainThread();
+		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
+		{
+			ensureAlways(RequestCounter.GetValue() == InputHandler.Id);
+			CurrentMessageEndpoint->Send(
+				new FResultItemFoundMsg(false, MoveTemp(Item)), CurrentMessageEndpoint->GetAddress());
+		}
 		return true;
 	}
 	return false;
@@ -221,24 +235,20 @@ bool FSearcher::AddFoundItemToResult(RequiredType&& Item, int32 TaskId)
 
 bool FSearcher::AllWordsFound(int32 InputId)
 {
-	FScopeLock ScopeLock(&InputOperationSection);
+	FScopeLock ScopeLock(&CriticalSection);
 	if (InputId == RequestCounter.GetValue())
 	{
 		InputHandler.bIsProcessRequestFinished = true;
-		NotifyMainThread();
-		return true;
+		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
+		{
+			CurrentMessageEndpoint->Send(
+				new FResultItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
+			return true;
+		}
+		return false;
 	}
 	return false;
 }
 
-void FSearcher::NotifyMainThread()
-{
-	if (!bIsNotifiedMainThread)
-	{
-		bIsNotifiedMainThread = true;
-		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
-		{
-			CurrentMessageEndpoint->Send(new FResultItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
-		}
-	}
-}
+
+//todo call stop when window close

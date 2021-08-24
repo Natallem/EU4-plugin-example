@@ -13,6 +13,7 @@ class FSearcher;
 class STextBlock;
 class ITableRow;
 class STableViewBase;
+struct FResultItemFoundMsg;
 
 template <typename T>
 class SListView;
@@ -32,9 +33,9 @@ public:
 	
 	void Construct(const FArguments& InArgs, TSharedRef<SSearchEverywhereWindow> InParentWindow);
 
-	void UpdateShownResults();
 	virtual bool SupportsKeyboardFocus() const override;
 	FText GetCurrentSearchRequest() const;
+	void ProcessMessage(const FResultItemFoundMsg& InMessage);
 private:
 	EActiveTimerReturnType SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const;
 	TSharedRef<ITableRow> OnGenerateTabSwitchListItemWidget(FListItemPtr InItem,

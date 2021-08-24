@@ -11,6 +11,7 @@
 #include "Widgets/SWindow.h"
 #include "SearchEverywhereWindow.h"
 #include "Widgets/Input/SButton.h"
+#include "Multithreading/ResultItemFoundMsg.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
@@ -119,9 +120,18 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 	CycleSelection();
 }
 
-void SSearchEverywhereWidget::UpdateShownResults()
+bool SSearchEverywhereWidget::SupportsKeyboardFocus() const
 {
-	TPair<bool, TArray<RequiredType>> Result = Searcher->GetRequestData();
+	return true;
+}
+
+FText SSearchEverywhereWidget::GetCurrentSearchRequest() const
+{
+	return SearchEditableText->GetText();
+}
+
+void SSearchEverywhereWidget::ProcessMessage(const FResultItemFoundMsg& InMessage)
+{
 	if (bShouldCleanList)
 	{
 		bShouldCleanList = false;
@@ -132,26 +142,23 @@ void SSearchEverywhereWidget::UpdateShownResults()
 	{
 		ItemsSource.Pop(false);
 	}
-	for (RequiredType& Str : Result.Value)
+	if (InMessage.Storage.IsType<TArray<RequiredType>>())
 	{
-		ItemsSource.Add(MakeShared<TOptional<RequiredType>>(Str));
+		for (const RequiredType& Str : InMessage.Storage.Get<TArray<RequiredType>>())
+		{
+			ItemsSource.Add(MakeShared<TOptional<RequiredType>>(Str));
+		}
 	}
-	if (!Result.Key)
+	else if (InMessage.Storage.IsType<RequiredType>())
+	{
+		ItemsSource.Add(MakeShared<TOptional<RequiredType>>(InMessage.Storage.Get<RequiredType>()));
+	}
+	if (!InMessage.bIsFinished)
 	{
 		ItemsSource.Add(MakeShared<TOptional<RequiredType>>());
 	}
 	ItemsListView->RebuildList();
 	CycleSelection();
-}
-
-bool SSearchEverywhereWidget::SupportsKeyboardFocus() const
-{
-	return true;
-}
-
-FText SSearchEverywhereWidget::GetCurrentSearchRequest() const
-{
-	return SearchEditableText->GetText();
 }
 
 EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
