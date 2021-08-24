@@ -4,9 +4,10 @@
 #include "ISettingsEditorModel.h"
 #include "Multithreading/Configuration.h"
 #include "Modules/ModuleManager.h"
+// #include "Multithreading/InputHandler.h"
 
 template <typename Type>
-class TSearchTask;
+struct TInputHandler;
 class ISettingsCategory;
 class ISettingsModule;
 class FAbstractSettingDetail;
@@ -18,8 +19,8 @@ class FInnerCategoryDetail;
 class FPropertyDetail;
 class FSectionDetail;
 class SWidget;
-
 class SDockTab;
+
 DECLARE_LOG_CATEGORY_EXTERN(LogPropertyHolder, Log, All)
 
 struct FSettingsDataCollection
@@ -44,11 +45,11 @@ struct FSettingsDataCollection
 class FPropertyHolder
 {
 public:
-	using FSearchTask = TSearchTask<RequiredType>;
+	using FInputHandler = TInputHandler<RequiredType>;
 
 	static FPropertyHolder& Get();
 
-	TOptional<RequiredType> FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter);
+	TOptional<RequiredType> FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
 
 	TSharedRef<FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
 	template <bool bShouldLog>

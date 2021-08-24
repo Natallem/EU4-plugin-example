@@ -10,7 +10,6 @@
 #include "Details/InnerCategoryDetail.h"
 #include "Details/PropertyDetail.h"
 #include "Details/SectionDetail.h"
-#include "Multithreading/SearchTask.h"
 #include "Widgets/Docking/SDockTab.h"
 
 #include "SettingsEditor/Private/Widgets/SSettingsEditor.h"
@@ -22,6 +21,7 @@
 #include "PropertyEditor/Private/DetailCategoryBuilderImpl.h"
 #include "PropertyEditor/Private/DetailGroup.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
+#include "Multithreading/InputHandler.h"
 
 DEFINE_LOG_CATEGORY(LogPropertyHolder);
 
@@ -135,29 +135,28 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TOptional<RequiredType> FPropertyHolder::FindNextWord(FSearchTask& OutTask, const FThreadSafeCounter& InRequestCounter)
+TOptional<RequiredType> FPropertyHolder::FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
-	for (int i = OutTask.NextIndexToCheck; i < Data.Num(); ++i)
+	for (int i = InputTask->NextIndexToCheck; i < Data.Num(); ++i)
 	{
 		++IterationCounter;
 		if (IterationCounter == IterationBeforeCheck)
 		{
-			if (InRequestCounter.GetValue() != OutTask.TaskId)
+			if (InputTask->bIsCancelled)
 			{
 				return TOptional<RequiredType>();
 			}
 			IterationCounter = 0;
 		}
-		if (Data[i]->GetDisplayName().ToString().Find(*OutTask.RequestString) != -1)
+		if (Data[i]->GetDisplayName().ToString().Find(*InputTask->InputRequest) != -1)
 		{
-			OutTask.NextIndexToCheck = i + 1;
+			InputTask->NextIndexToCheck = i + 1;
 			return i;
 		}
 	}
-	OutTask.NextIndexToCheck = Data.Num();
-	OutTask.bIsCompleteSearching = true;
+	InputTask->NextIndexToCheck = Data.Num();
 	return TOptional<RequiredType>();
 }
 

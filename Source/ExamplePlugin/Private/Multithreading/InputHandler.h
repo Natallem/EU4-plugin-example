@@ -1,54 +1,62 @@
 #pragma once
 #include "CoreMinimal.h"
-
+#include "ResultItemFoundMsg.h"
 template <typename RequiredType>
 struct TInputHandler
 {
-	TInputHandler(int32 Id, const FString& InInputRequest, int32 DesiredOutputSize,
-	              int32 DesiredBufferSize)
-		: Id(Id),
-		  InputRequest(InInputRequest),
+	TInputHandler(const FString& InInputRequest, int32 DesiredOutputSize, int32 DesiredBufferSize)
+		: InputRequest(InInputRequest),
 		  DesiredOutputSize(DesiredOutputSize),
 		  DesiredBufferSize(DesiredBufferSize),
 		  bIsProcessRequestFinished(InInputRequest.IsEmpty())
 	{
-		OutputToGive.Reserve(DesiredOutputSize);
 		Buffer.Reserve(DesiredBufferSize);
 	}
 
-	bool MoveFromBufferToMainResult()
+	FResultItemFoundMsg*  GetOutputFromBuffer()
 	{
+		
+		// FResultItemFoundMsg* ClearSubject = new FResultItemFoundMsg();
 		if (DesiredOutputSize > FoundOutputCounter && Buffer.Num() != 0)
 		{
-			if (OutputToGive.Num() == 0 && FoundOutputCounter + Buffer.Num() < DesiredOutputSize)
+			TArray<RequiredType> OutputFromBuffer;
+			if (FoundOutputCounter + Buffer.Num() < DesiredOutputSize)
 			{
-				OutputToGive = MoveTemp(Buffer);
+				OutputFromBuffer = MoveTemp(Buffer);
 				Buffer.Reset();
-				FoundOutputCounter += OutputToGive.Num();
+				FoundOutputCounter += OutputFromBuffer.Num();
+				if (bIsAllDataFoundInBuffer)
+				{
+					bIsProcessRequestFinished = true;
+				}
 			}
 			else
 			{
 				const int32 ElementsNumber = FMath::Min(DesiredOutputSize - FoundOutputCounter, Buffer.Num());
 				for (int i = 0; i < ElementsNumber; ++i)
 				{
-					OutputToGive.Add(MoveTemp(Buffer[i]));
+					OutputFromBuffer.Add(MoveTemp(Buffer[i]));
 				}
 				Buffer.RemoveAt(0, ElementsNumber, false);
 				FoundOutputCounter += ElementsNumber;
 			}
-			return true;
+			return new FResultItemFoundMsg(bIsProcessRequestFinished, MoveTemp(OutputFromBuffer));
 		}
-		return false;
+		return nullptr;
 	}
 
-	int32 Id;
 	FString InputRequest;
+	FThreadSafeBool bIsCancelled = false;
 	int32 DesiredOutputSize;
 	int32 DesiredBufferSize;
+	
 	/** True then all data found and main thead notified about this */
 	bool bIsProcessRequestFinished;
+	
+	/** True if all data found and rest of data is in buffer. */
+	bool bIsAllDataFoundInBuffer = false;
+	
 	int32 NextIndexToCheck = 0;
 	int32 FoundOutputCounter = 0;
-	TArray<RequiredType> OutputToGive;
 	TArray<RequiredType> Buffer;
 };
