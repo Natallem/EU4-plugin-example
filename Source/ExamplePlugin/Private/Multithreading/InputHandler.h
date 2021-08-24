@@ -1,10 +1,12 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "ResultItemFoundMsg.h"
-template <typename RequiredType>
-struct TInputHandler
+#include "SearchableItem.h"
+
+class FInputHandler
 {
-	TInputHandler(const FString& InInputRequest, int32 DesiredOutputSize, int32 DesiredBufferSize)
+public:
+	FInputHandler(const FString& InInputRequest, int32 DesiredOutputSize, int32 DesiredBufferSize)
 		: InputRequest(InInputRequest),
 		  DesiredOutputSize(DesiredOutputSize),
 		  DesiredBufferSize(DesiredBufferSize),
@@ -19,7 +21,7 @@ struct TInputHandler
 		// FResultItemFoundMsg* ClearSubject = new FResultItemFoundMsg();
 		if (DesiredOutputSize > FoundOutputCounter && Buffer.Num() != 0)
 		{
-			TArray<RequiredType> OutputFromBuffer;
+			TArray<TSharedRef<ISearchableItem>> OutputFromBuffer;
 			if (FoundOutputCounter + Buffer.Num() < DesiredOutputSize)
 			{
 				OutputFromBuffer = MoveTemp(Buffer);
@@ -58,5 +60,5 @@ struct TInputHandler
 	
 	int32 NextIndexToCheck = 0;
 	int32 FoundOutputCounter = 0;
-	TArray<RequiredType> Buffer;
+	TArray<TSharedRef<ISearchableItem>> Buffer;
 };

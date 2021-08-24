@@ -2,12 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "ISettingsEditorModel.h"
-#include "Multithreading/Configuration.h"
 #include "Modules/ModuleManager.h"
+class FInputHandler;
+class ISearchableItem;
 // #include "Multithreading/InputHandler.h"
-
-template <typename Type>
-struct TInputHandler;
 class ISettingsCategory;
 class ISettingsModule;
 class FAbstractSettingDetail;
@@ -45,11 +43,10 @@ struct FSettingsDataCollection
 class FPropertyHolder
 {
 public:
-	using FInputHandler = TInputHandler<RequiredType>;
 
 	static FPropertyHolder& Get();
 
-	TOptional<RequiredType> FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
+	TOptional<TSharedRef<ISearchableItem>> FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
 
 	TSharedRef<FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
 	template <bool bShouldLog>

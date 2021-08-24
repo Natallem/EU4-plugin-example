@@ -2,7 +2,6 @@
 
 #include "ISettingsModule.h"
 #include "Modules/ModuleManager.h"
-#include "Multithreading/Configuration.h"
 #include "SettingsData/PropertyHolder.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
@@ -21,7 +20,7 @@ class SListView;
 class SSearchEverywhereWidget final : public SCompoundWidget
 {
 private:
-	typedef TSharedPtr<TOptional<RequiredType>> FListItemPtr;
+	typedef TSharedPtr<TOptional<TSharedRef<ISearchableItem>>> FListItemPtr;
 	typedef SListView<FListItemPtr> SListViewWidget;
 public:
 	SLATE_BEGIN_ARGS(SSearchEverywhereWidget)

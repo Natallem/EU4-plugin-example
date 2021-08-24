@@ -3,6 +3,7 @@
 #include "EditorStyleSet.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Multithreading/Searcher.h"
+#include "Multithreading/SearchableItem.h"
 #include "SettingsData/Details/AbstractSettingDetail.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Input/SEditableText.h"
@@ -142,20 +143,20 @@ void SSearchEverywhereWidget::ProcessMessage(const FResultItemFoundMsg& InMessag
 	{
 		ItemsSource.Pop(false);
 	}
-	if (InMessage.Storage.IsType<TArray<RequiredType>>())
+	if (InMessage.Storage.IsType<TArray<TSharedRef<ISearchableItem>>>())
 	{
-		for (const RequiredType& Str : InMessage.Storage.Get<TArray<RequiredType>>())
+		for (const TSharedRef<ISearchableItem>& Str : InMessage.Storage.Get<TArray<TSharedRef<ISearchableItem>>>())
 		{
-			ItemsSource.Add(MakeShared<TOptional<RequiredType>>(Str));
+			ItemsSource.Add(MakeShared<TOptional<TSharedRef<ISearchableItem>>>(Str));
 		}
 	}
-	else if (InMessage.Storage.IsType<RequiredType>())
+	else if (InMessage.Storage.IsType<TSharedRef<ISearchableItem>>())
 	{
-		ItemsSource.Add(MakeShared<TOptional<RequiredType>>(InMessage.Storage.Get<RequiredType>()));
+		ItemsSource.Add(MakeShared<TOptional<TSharedRef<ISearchableItem>>>(InMessage.Storage.Get<TSharedRef<ISearchableItem>>()));
 	}
 	if (!InMessage.bIsFinished)
 	{
-		ItemsSource.Add(MakeShared<TOptional<RequiredType>>());
+		ItemsSource.Add(MakeShared<TOptional<TSharedRef<ISearchableItem>>>());
 	}
 	ItemsListView->RebuildList();
 	CycleSelection();
@@ -209,7 +210,7 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 		+ SHorizontalBox::Slot()
 		[
 			InItem->IsSet()
-				? PropertyHolder.GetSettingDetail(InItem->GetValue())->GetRowWidget()
+				? InItem->GetValue()->GetRowWidget()
 				: ShowMoreResultsItem.ToSharedRef()
 		]
 	];
@@ -247,7 +248,7 @@ void SSearchEverywhereWidget::OnSelectItem(FListItemPtr InItem) const
 {
 	if (InItem->IsSet())
 	{
-		PropertyHolder.GetSettingDetail(InItem->GetValue())->DoAction();
+		InItem->GetValue()->DoAction();
 		ParentWindow->RequestDestroyWindow();
 	}
 	else

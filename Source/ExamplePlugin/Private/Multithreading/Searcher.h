@@ -3,7 +3,6 @@
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
 
-#include "Configuration.h"
 #include "InputHandler.h"
 #include "MessageEndpoint.h"
 
@@ -11,8 +10,6 @@ class FRunnableThread;
 
 class FSearcher : public FRunnable
 {
-private:
-	using FInputHandler = TInputHandler<RequiredType>;
 public:
 	FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint);
 
@@ -47,7 +44,7 @@ private:
 	 * @param TaskId Id of current task
 	 * @return true if added successfully (i.e. input does not change)
 	 */
-	bool AddFoundItemToResult(RequiredType&& Item, TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task);
+	bool AddFoundItemToResult(TSharedRef<ISearchableItem>&& Item, TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task);
 
 	/** Notify main thread, that search is completed. 
 	 * @param InputTaskWeakPtr WeakPtr to task, that was completed.

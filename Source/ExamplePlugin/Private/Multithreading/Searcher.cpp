@@ -120,7 +120,7 @@ bool FSearcher::ExecuteFindResultTask(TSharedPtr<FInputHandler, ESPMode::ThreadS
 {
 	while (InputTask->DesiredOutputSize > InputTask->FoundOutputCounter)
 	{
-		TOptional<uint64> FoundWord = FPropertyHolder::Get().FindNextWord(InputTask);
+		TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextWord(InputTask);
 		if (FoundWord)
 		{
 			if (!AddFoundItemToResult(MoveTemp(FoundWord.GetValue()), InputTask))
@@ -148,7 +148,7 @@ bool FSearcher::FillBuffer(TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
 	{
 		while (Task->DesiredBufferSize > Task->Buffer.Num())
 		{
-			TOptional<RequiredType> FoundWord = FPropertyHolder::Get().FindNextWord(Task);
+			TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextWord(Task);
 			if (FoundWord)
 			{
 				Task->Buffer.Push(MoveTemp(FoundWord.GetValue()));
@@ -162,7 +162,7 @@ bool FSearcher::FillBuffer(TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
 	return true;
 }
 
-bool FSearcher::AddFoundItemToResult(RequiredType&& Item, TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
+bool FSearcher::AddFoundItemToResult(TSharedRef<ISearchableItem>&& Item, TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
 {
 	FScopeLock ScopeLock(&CriticalSection);
 	if (!Task->bIsCancelled)

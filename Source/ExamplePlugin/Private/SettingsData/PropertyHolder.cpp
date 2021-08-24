@@ -135,7 +135,7 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TOptional<RequiredType> FPropertyHolder::FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
+TOptional<TSharedRef<ISearchableItem>> FPropertyHolder::FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
@@ -146,18 +146,18 @@ TOptional<RequiredType> FPropertyHolder::FindNextWord(const TSharedPtr<FInputHan
 		{
 			if (InputTask->bIsCancelled)
 			{
-				return TOptional<RequiredType>();
+				return TOptional<TSharedRef<ISearchableItem>>();
 			}
 			IterationCounter = 0;
 		}
 		if (Data[i]->GetDisplayName().ToString().Find(*InputTask->InputRequest) != -1)
 		{
 			InputTask->NextIndexToCheck = i + 1;
-			return i;
+			return TOptional<TSharedRef<ISearchableItem>>(Data[i]);
 		}
 	}
 	InputTask->NextIndexToCheck = Data.Num();
-	return TOptional<RequiredType>();
+	return TOptional<TSharedRef<ISearchableItem>>();
 }
 
 TSharedRef<FAbstractSettingDetail> FPropertyHolder::GetSettingDetail(uint64 Index) const
@@ -409,7 +409,7 @@ FString FPropertyHolder::GetPropertyName(TSharedRef<FDetailTreeNode> DetailNode)
 
 void FPropertyHolder::WriteLog(const FString& Text, bool bIsAppend)
 {
-	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog_temp.txt";
+	static FString FileLogPath = FPaths::ProjectPluginsDir() + "ExamplePlugin/Resources/PropertyLog.txt";
 	FFileHelper::SaveStringToFile(Text, *FileLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(),
 	                              (bIsAppend) ? FILEWRITE_Append : FILEWRITE_None);
 }

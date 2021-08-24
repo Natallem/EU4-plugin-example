@@ -1,7 +1,9 @@
 #pragma once
 #include "Misc/TVariant.h"
-#include "Configuration.h"
 #include "ResultItemFoundMsg.generated.h"
+
+class ISearchableItem;
+
 USTRUCT()
 struct FResultItemFoundMsg
 {
@@ -9,18 +11,18 @@ struct FResultItemFoundMsg
 
 	FResultItemFoundMsg() = default;
 
-	FResultItemFoundMsg(bool bIsFinished, RequiredType Value)
+	FResultItemFoundMsg(bool bIsFinished, TSharedRef<ISearchableItem> Value)
 		: bIsFinished(bIsFinished),
-		  Storage(TInPlaceType<RequiredType>(), MoveTemp(Value))
+		  Storage(TInPlaceType<TSharedRef<ISearchableItem>>(), MoveTemp(Value))
 	{
 	}
 
-	FResultItemFoundMsg(bool bIsFinished, TArray<RequiredType>&& Values)
+	FResultItemFoundMsg(bool bIsFinished, TArray<TSharedRef<ISearchableItem>>&& Values)
 		: bIsFinished(bIsFinished),
-		  Storage(TInPlaceType<TArray<RequiredType>>(), MoveTemp(Values))
+		  Storage(TInPlaceType<TArray<TSharedRef<ISearchableItem>>>(), MoveTemp(Values))
 	{
 	}
 
 	bool bIsFinished = true;
-	TVariant<FEmptyVariantState, RequiredType, TArray<RequiredType>> Storage;
+	TVariant<FEmptyVariantState, TSharedRef<ISearchableItem>, TArray<TSharedRef<ISearchableItem>>> Storage;
 };
