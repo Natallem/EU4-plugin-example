@@ -135,7 +135,8 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TOptional<TSharedRef<ISearchableItem>> FPropertyHolder::FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
+TOptional<TSharedRef<ISearchableItem>> FPropertyHolder::FindNextWord(
+	const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
 {
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
@@ -165,6 +166,47 @@ TSharedRef<FAbstractSettingDetail> FPropertyHolder::GetSettingDetail(uint64 Inde
 	return Data[Index];
 }
 
+bool FPropertyHolder::UpdateTreeNodes(
+	const TSharedRef<FPropertyDetail> PropertyDetail,TSharedRef<FInnerCategoryDetail> InnerCategoryDetail  )
+{
+	bool bIsFoundPropertyNode = false;
+	FSettingsDataCollection Collection = GetSettingsData<false>();
+	for (const TSharedRef<FPropertyDetail>& CurrentPropertyDetail : Collection.PropertyDetails)
+	{
+		if (CurrentPropertyDetail->GetDisplayName().EqualTo(PropertyDetail->GetDisplayName()))
+		{
+			if (CurrentPropertyDetail->SettingDetail.IsValid())
+			{
+				PropertyDetail->SettingDetail = CurrentPropertyDetail->SettingDetail.Pin();
+				bIsFoundPropertyNode = true;
+				break;
+			}
+			UE_LOG(LogSearchSettingDetail, Warning, TEXT("Cannot find node for property '%s'"),
+			       *PropertyDetail->GetDisplayName().ToString())
+			return false;
+		}
+	}
+	if (!bIsFoundPropertyNode)
+	{
+		return false;
+	}
+	for (const TSharedRef<FInnerCategoryDetail>& CurrentInnerCategoryDetail : Collection.InnerCategoryDetails)
+	{
+		if (CurrentInnerCategoryDetail->GetDisplayName().EqualTo(InnerCategoryDetail->GetDisplayName()))
+		{
+			if (CurrentInnerCategoryDetail->CategoryTreeNode.IsValid())
+			{
+				InnerCategoryDetail->CategoryTreeNode = CurrentInnerCategoryDetail->CategoryTreeNode;
+				return true;
+			}
+			UE_LOG(LogSearchSettingDetail, Warning, TEXT("Cannot find category node '%s'"),
+			       *InnerCategoryDetail->GetDisplayName().ToString())
+			return false;
+		}
+	}
+	return false;;
+}
+
 template <bool bShouldLog>
 FSettingsDataCollection FPropertyHolder::GetSettingsData(ISettingsModule& SettingModule)
 {
@@ -177,18 +219,13 @@ FSettingsDataCollection FPropertyHolder::GetSettingsData(ISettingsModule& Settin
 	FSettingsDataCollection Result;
 	TMap<TSharedPtr<ISettingsCategory>, TSharedPtr<FCategoryDetail>> FoundCategories;
 
-	TSharedPtr<SDockTab> EditorSettingsTab = FGlobalTabmanager::Get()->FindExistingLiveTab(EditorSettingsName);
-	const bool bShouldCloseSettings = !EditorSettingsTab.IsValid();
-	if (!EditorSettingsTab.IsValid() && !OpenEditorTab(EditorSettingsTab, SettingModule))
+	TSharedPtr<SDockTab> EditorSettingsTab;
+	bool bShouldCloseSettings;
+	const TSharedPtr<SDetailsView> DetailsView = GetDetailsView(EditorSettingsTab, bShouldCloseSettings, SettingModule);
+	if (!DetailsView.IsValid())
 	{
 		return Result;
 	}
-
-	const TSharedRef<SSettingsEditor> SettingsEditor = StaticCastSharedRef<SSettingsEditor>(
-		EditorSettingsTab->GetContent());
-	const TSharedPtr<SDetailsView> DetailsView = StaticCastSharedPtr<SDetailsView>(*SettingsEditor.*GetPrivate(
-		PrivateFieldHack::FGetter_SettingsView_From_SSettingsEditor()));
-
 	// get Model to find Section by object
 	const TSharedPtr<FSettingsDetailRootObjectCustomization> DetailRootObjectCustomization = StaticCastSharedPtr<
 		FSettingsDetailRootObjectCustomization>(DetailsView->GetRootObjectCustomization());
@@ -244,6 +281,21 @@ ISettingsModule& FPropertyHolder::GetSettingModule()
 FPropertyHolder::FPropertyHolder()
 {
 	Data = GetSettingsData<false>();
+}
+
+TSharedPtr<SDetailsView> FPropertyHolder::GetDetailsView(TSharedPtr<SDockTab>& EditorSettingsTab,
+                                                         bool& bShouldCloseSettings, ISettingsModule& SettingModule)
+{
+	EditorSettingsTab = FGlobalTabmanager::Get()->FindExistingLiveTab(EditorSettingsName);
+	bShouldCloseSettings = !EditorSettingsTab.IsValid();
+	if (!EditorSettingsTab.IsValid() && !OpenEditorTab(EditorSettingsTab, SettingModule))
+	{
+		return nullptr;
+	}
+	const TSharedRef<SSettingsEditor> SettingsEditor = StaticCastSharedRef<SSettingsEditor>(
+		EditorSettingsTab->GetContent());
+	return StaticCastSharedPtr<SDetailsView>(*SettingsEditor.*GetPrivate(
+		PrivateFieldHack::FGetter_SettingsView_From_SSettingsEditor()));
 }
 
 bool FPropertyHolder::OpenEditorTab(TSharedPtr<SDockTab>& EditorTab, ISettingsModule& SettingsModule)

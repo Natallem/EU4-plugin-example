@@ -38,6 +38,14 @@ struct Getter_CurrentFilter_From_SDetailsViewBase
 
 template struct FHelperPrivateField<Getter_CurrentFilter_From_SDetailsViewBase, &SDetailsViewBase::CurrentFilter>;
 
+struct Getter_DetailTree_From_SDetailsViewBase
+{
+	typedef TSharedPtr<SDetailTree> SDetailsViewBase::* type;
+	friend type get(Getter_DetailTree_From_SDetailsViewBase);
+};
+
+template struct FHelperPrivateField<Getter_DetailTree_From_SDetailsViewBase, &SDetailsViewBase::DetailTree>;
+
 struct Getter_SearchBox_From_SDetailsViewBase
 {
 	typedef TSharedPtr<SSearchBox> SDetailsViewBase::* type;
@@ -54,20 +62,20 @@ FName FAbstractSettingDetail::GetName() const
 TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget() const
 {
 	return SNew(SHorizontalBox)
-    		+ SHorizontalBox::Slot()
-    		.AutoWidth()
-    		[
-    			SNew(STextBlock)
-    			.Text(GetDisplayName())
-    		]
-    		+ SHorizontalBox::Slot()
-    		  .HAlign(HAlign_Right)
-    		  .FillWidth(0.25)
-    		[
-    			SNew(STextBlock)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			SNew(STextBlock)
+			.Text(GetDisplayName())
+		]
+		+ SHorizontalBox::Slot()
+		  .HAlign(HAlign_Right)
+		  .FillWidth(0.25)
+		[
+			SNew(STextBlock)
     				.ColorAndOpacity(FColor::FromHex("#808080"))
     				.Text(FText::FromString(GetPath()))
-    		];
+		];
 }
 
 TSharedPtr<SDetailsView> FAbstractSettingDetail::GetSDetailsView() const
@@ -80,6 +88,12 @@ TSharedPtr<SDetailsView> FAbstractSettingDetail::GetSDetailsView() const
 	const TSharedPtr<IDetailsView> DetailsViewPrivateField = (*SettingsEditorWidget).*get(
 		Getter_SettingsView_From_SSettingsEditor());
 	return StaticCastSharedPtr<SDetailsView>(DetailsViewPrivateField);
+}
+
+TSharedPtr<SDetailTree> FAbstractSettingDetail::GetDetailTree(TSharedPtr<SDetailsView> DetailsViewPtr) const
+{
+	const TSharedPtr<SDetailsViewBase> DetailsViewBasePtr = StaticCastSharedPtr<SDetailsViewBase>(DetailsViewPtr);
+	return (*DetailsViewBasePtr).*get(Getter_DetailTree_From_SDetailsViewBase());
 }
 
 void FAbstractSettingDetail::SetTextInSearchBox(TSharedPtr<SDetailsView> DetailsViewPtr, const FText& newText)

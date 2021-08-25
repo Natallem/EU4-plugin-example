@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "ISettingsEditorModel.h"
+#include "Engine/EngineTypes.h"
 #include "Modules/ModuleManager.h"
+class SDetailsView;
 class FInputHandler;
 class ISearchableItem;
 // #include "Multithreading/InputHandler.h"
@@ -43,19 +45,26 @@ struct FSettingsDataCollection
 class FPropertyHolder
 {
 public:
-
 	static FPropertyHolder& Get();
 
-	TOptional<TSharedRef<ISearchableItem>> FindNextWord(const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
+	TOptional<TSharedRef<ISearchableItem>> FindNextWord(
+		const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
 
 	TSharedRef<FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
+
+	bool UpdateTreeNodes(
+		const TSharedRef<FPropertyDetail> PropertyDetail, TSharedRef<FInnerCategoryDetail> InnerCategoryDetail);
+
 	template <bool bShouldLog>
 	static FSettingsDataCollection GetSettingsData(ISettingsModule& SettingModule = GetSettingModule());
 
 	static ISettingsModule& GetSettingModule();
-
+	FTimerHandle TimerHandle;
 private:
 	FPropertyHolder();
+
+	static TSharedPtr<SDetailsView> GetDetailsView(TSharedPtr<SDockTab>& EditorSettingsTab, bool& bShouldCloseSettings,
+	                                               ISettingsModule& SettingModule);
 
 	/** Opens Setting Editor Tab to extract all settings properties from it. Need to be closed
 	 * @brief 

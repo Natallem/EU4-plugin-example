@@ -262,6 +262,7 @@ FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCate
 {
 	FModuleManager::LoadModuleChecked<ISettingsModule>("Settings").ShowViewer(
 		InContainerName, InCategoryName, InSectionName);
+	ParentWindow->RequestDestroyWindow();
 	return FReply::Handled();
 }
 

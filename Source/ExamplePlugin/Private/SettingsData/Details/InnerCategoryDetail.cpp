@@ -6,10 +6,12 @@
 #include "SectionDetail.h"
 
 FInnerCategoryDetail::FInnerCategoryDetail(const TSharedRef<FSectionDetail>& SectionDetail,
-	const FText& CategoryDisplayName, const TWeakPtr<FDetailCategoryImpl>& CategoryTreeNode, int SettingsIndex): SectionDetail(SectionDetail),
-	InnerCategoryDisplayName(CategoryDisplayName),
-	CategoryTreeNode(CategoryTreeNode),
-	SettingsIndex(SettingsIndex)
+                                           const FText& InnerCategoryDisplayName,
+                                           const TWeakPtr<FDetailCategoryImpl>& CategoryTreeNode, int SettingsIndex)
+	: SectionDetail(SectionDetail),
+	  CategoryTreeNode(CategoryTreeNode),
+	  InnerCategoryDisplayName(InnerCategoryDisplayName),
+	  SettingsIndex(SettingsIndex)
 {
 }
 

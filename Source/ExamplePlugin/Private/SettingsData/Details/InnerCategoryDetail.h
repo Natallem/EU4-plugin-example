@@ -20,8 +20,8 @@ public:
 	virtual FString GetPath() const override;
 
 	TSharedRef<FSectionDetail> SectionDetail;
+	TWeakPtr<FDetailCategoryImpl> CategoryTreeNode;
 private:
 	FText InnerCategoryDisplayName;
-	TWeakPtr<FDetailCategoryImpl> CategoryTreeNode;
 	int SettingsIndex;
 };

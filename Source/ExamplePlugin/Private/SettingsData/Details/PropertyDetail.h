@@ -1,12 +1,13 @@
 #pragma once
 
 #include "AbstractSettingDetail.h"
+#include "Engine/EngineTypes.h"
 
 class ISettingsModule;
 class FInnerCategoryDetail;
 class FDetailTreeNode;
 
-class FPropertyDetail : public FAbstractSettingDetail
+class FPropertyDetail : public FAbstractSettingDetail, public TSharedFromThis<FPropertyDetail>
 {
 public:
 	FPropertyDetail(const TSharedRef<FInnerCategoryDetail>& InnerCategoryDetail,
@@ -17,9 +18,12 @@ public:
 	virtual void DoAction() override;
 	virtual FString GetPath() const override;
 
-private:
-	TSharedRef<FInnerCategoryDetail> InnerCategoryDetail;
 	TWeakPtr<FDetailTreeNode> SettingDetail;
+	FTimerHandle TimerHandle;
+
+
+	TSharedRef<FInnerCategoryDetail> InnerCategoryDetail;
+private:
 	FText PropertyDisplayName;
 	int SettingIndex;
 	bool bIsAdvanced;
