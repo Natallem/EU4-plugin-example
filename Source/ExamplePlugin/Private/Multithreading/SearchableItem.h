@@ -12,5 +12,5 @@ public:
 
 	virtual FText GetDisplayName() const = 0;
 	virtual void DoAction() = 0;
-	virtual TSharedRef<SWidget> GetRowWidget() const = 0;
+	virtual TSharedRef<SWidget> GetRowWidget(FText Request) const = 0;
 };

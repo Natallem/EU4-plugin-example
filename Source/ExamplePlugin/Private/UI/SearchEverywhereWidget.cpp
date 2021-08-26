@@ -210,7 +210,7 @@ TSharedRef<ITableRow> SSearchEverywhereWidget::OnGenerateTabSwitchListItemWidget
 		+ SHorizontalBox::Slot()
 		[
 			InItem->IsSet()
-				? InItem->GetValue()->GetRowWidget()
+				? InItem->GetValue()->GetRowWidget(SearchEditableText->GetText())
 				: ShowMoreResultsItem.ToSharedRef()
 		]
 	];

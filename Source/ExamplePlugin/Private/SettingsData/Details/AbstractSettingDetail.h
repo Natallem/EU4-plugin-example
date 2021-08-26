@@ -17,7 +17,7 @@ public:
 	virtual FName GetName() const;
 	virtual FString GetPath() const = 0;
 
-	virtual TSharedRef<SWidget> GetRowWidget() const override;
+	virtual TSharedRef<SWidget> GetRowWidget(FText Request) const override;
 
 protected:
 	TSharedPtr<SDetailsView> GetSDetailsView() const;

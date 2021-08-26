@@ -59,7 +59,7 @@ FName FAbstractSettingDetail::GetName() const
 	return FName();
 }
 
-TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget() const
+TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget(FText Request) const
 {
 	return SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -67,6 +67,7 @@ TSharedRef<SWidget> FAbstractSettingDetail::GetRowWidget() const
 		[
 			SNew(STextBlock)
 			.Text(GetDisplayName())
+			.HighlightText(Request)
 		]
 		+ SHorizontalBox::Slot()
 		  .HAlign(HAlign_Right)

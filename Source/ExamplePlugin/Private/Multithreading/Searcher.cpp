@@ -40,10 +40,11 @@ uint32 FSearcher::Run()
 			FScopeLock ScopeLock(&CriticalSection);
 			if (!InputHandlerPtr->bIsProcessRequestFinished)
 			{
-				if (FResultItemFoundMsg* Message = InputHandlerPtr->GetOutputFromBuffer())
+				if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.
+					Pin())
 				{
-					if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint
-						.Pin())
+					FResultItemFoundMsg* Message = InputHandlerPtr->GetOutputFromBuffer();
+					if (Message)
 					{
 						CurrentMessageEndpoint->Send(Message, CurrentMessageEndpoint->GetAddress());
 					}
@@ -162,7 +163,8 @@ bool FSearcher::FillBuffer(TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
 	return true;
 }
 
-bool FSearcher::AddFoundItemToResult(TSharedRef<ISearchableItem>&& Item, TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
+bool FSearcher::AddFoundItemToResult(TSharedRef<ISearchableItem>&& Item,
+                                     TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
 {
 	FScopeLock ScopeLock(&CriticalSection);
 	if (!Task->bIsCancelled)
