@@ -12,7 +12,6 @@
 #include "Widgets/SWindow.h"
 #include "SearchEverywhereWindow.h"
 #include "Widgets/Input/SButton.h"
-#include "Multithreading/ResultItemFoundMsg.h"
 
 #define LOCTEXT_NAMESPACE "FExamplePluginModule"
 
@@ -21,21 +20,37 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 	ParentWindow = InParentWindow;
 	Searcher = ParentWindow->GetSearcher();
 
+	auto CreateFilterButton = [this](ESettingType Type, const FText& Name) -> TSharedRef<SButton>
+	{
+		return SNew(SButton)
+				.Text(Name)
+				.ForegroundColor(FCoreStyle::Get().GetSlateColor("DefaultForeground"))
+				.ButtonColorAndOpacity(this, &SSearchEverywhereWidget::GetButtonColor, Type)
+				.OnClicked(this, &SSearchEverywhereWidget::ChangeSettingSearchType, Type);
+	};
+
 	const TSharedRef<SWidget> TabsWidget = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
-			SNew(SButton)
-			.Text(LOCTEXT("OpenSettingsTestingTextButton", "Open Settings"))
-			.OnClicked(this, &SSearchEverywhereWidget::OpenSettings, FName("Editor"),
-			           FName("General"), FName("Appearance"))
-		]
-		+ SHorizontalBox::Slot()
+			CreateFilterButton(All, FText::FromString("All"))
+		] + SHorizontalBox::Slot()
 		.AutoWidth()
 		[
-			SNew(SButton)
-			.Text(LOCTEXT("LogAllPropertiesButtonText", "Log all properties"))
-			.OnClicked_Static(&SSearchEverywhereWidget::LogAllProperties)
+			CreateFilterButton(Category, FText::FromString("Category"))
+		] + SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			CreateFilterButton(Section, FText::FromString("Section"))
+		] + SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			CreateFilterButton(InnerCategory, FText::FromString("Inner Category"))
+		] + SHorizontalBox::Slot()
+		.AutoWidth()
+
+		[
+			CreateFilterButton(Property, FText::FromString("Property"))
 		];
 
 	const TSharedRef<SWidget> SearchTableWidget =
@@ -67,7 +82,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 		];
 
 	RegisterActiveTimer(
-		0.f, FWidgetActiveTimerDelegate::CreateSP(this, &SSearchEverywhereWidget::SetFocusPostConstruct));
+		0.f, FWidgetActiveTimerDelegate::CreateSP(this, &SSearchEverywhereWidget::SetKeyboardFocus));
 
 	ItemsListView = SNew(SListViewWidget)
 		.ItemHeight(64)
@@ -77,7 +92,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 		.OnSelectionChanged(this, &SSearchEverywhereWidget::OnListSelectionChanged)
 		.OnMouseButtonClick(this, &SSearchEverywhereWidget::OnSelectItem);
 
-	ListTableWidget = SNew(SVerticalBox)
+	const TSharedRef<SWidget> ListTableWidget = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		[
@@ -113,7 +128,7 @@ void SSearchEverywhereWidget::Construct(const FArguments& InArgs, TSharedRef<SSe
 				  .FillHeight(1.0f)
 				  .Padding(0)
 				[
-					ListTableWidget.ToSharedRef()
+					ListTableWidget
 				]
 			]
 		]
@@ -131,7 +146,7 @@ FText SSearchEverywhereWidget::GetCurrentSearchRequest() const
 	return SearchEditableText->GetText();
 }
 
-void SSearchEverywhereWidget::ProcessMessage(const FResultItemFoundMsg& InMessage)
+void SSearchEverywhereWidget::ProcessMessage(const FItemFoundMsg& InMessage)
 {
 	if (bShouldCleanList)
 	{
@@ -152,7 +167,8 @@ void SSearchEverywhereWidget::ProcessMessage(const FResultItemFoundMsg& InMessag
 	}
 	else if (InMessage.Storage.IsType<TSharedRef<ISearchableItem>>())
 	{
-		ItemsSource.Add(MakeShared<TOptional<TSharedRef<ISearchableItem>>>(InMessage.Storage.Get<TSharedRef<ISearchableItem>>()));
+		ItemsSource.Add(
+			MakeShared<TOptional<TSharedRef<ISearchableItem>>>(InMessage.Storage.Get<TSharedRef<ISearchableItem>>()));
 	}
 	if (!InMessage.bIsFinished)
 	{
@@ -162,7 +178,7 @@ void SSearchEverywhereWidget::ProcessMessage(const FResultItemFoundMsg& InMessag
 	CycleSelection();
 }
 
-EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InCurrentTime, float InDeltaTime) const
+EActiveTimerReturnType SSearchEverywhereWidget::SetKeyboardFocus(double InCurrentTime, float InDeltaTime) const
 {
 	if (SearchEditableText.IsValid())
 	{
@@ -174,7 +190,8 @@ EActiveTimerReturnType SSearchEverywhereWidget::SetFocusPostConstruct(double InC
 void SSearchEverywhereWidget::OnTextChanged(const FText& Filter)
 {
 	bShouldCleanList = true;
-	Searcher->SetInput(Filter.ToString());
+	ItemsListView->ClearSelection();
+	Searcher->SetInput(Filter.ToString(), SearchSettingType);
 }
 
 void SSearchEverywhereWidget::OnTextCommit(const FText& CommittedText, ETextCommit::Type CommitType) const
@@ -187,7 +204,6 @@ void SSearchEverywhereWidget::OnTextCommit(const FText& CommittedText, ETextComm
 
 FReply SSearchEverywhereWidget::OnSearchTextKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	UE_LOG(LogTemp, Log, TEXT("EP : OnSearchTextKeyDown %s"), *InKeyEvent.GetKey().ToString());
 	if (InKeyEvent.GetKey() == EKeys::Escape)
 	{
 		ParentWindow->RequestDestroyWindow();
@@ -254,22 +270,31 @@ void SSearchEverywhereWidget::OnSelectItem(FListItemPtr InItem) const
 	else
 	{
 		Searcher->FindMoreDataResult();
-		SetFocusPostConstruct(0.0, 0.f);
+		SetKeyboardFocus(0.0, 0.f);
 	}
 }
 
-FReply SSearchEverywhereWidget::OpenSettings(FName InContainerName, FName InCategoryName, FName InSectionName) const
+FReply SSearchEverywhereWidget::ChangeSettingSearchType(ESettingType NewType)
 {
-	FModuleManager::LoadModuleChecked<ISettingsModule>("Settings").ShowViewer(
-		InContainerName, InCategoryName, InSectionName);
-	ParentWindow->RequestDestroyWindow();
+	if (NewType != SearchSettingType)
+	{
+		bShouldCleanList = true;
+		SearchSettingType = NewType;
+		ItemsListView->ClearSelection();
+		Searcher->SetInput(SearchEditableText->GetText().ToString(), SearchSettingType);
+	}
+	SetKeyboardFocus(0.0, 0.f);
 	return FReply::Handled();
 }
 
-FReply SSearchEverywhereWidget::LogAllProperties()
+FSlateColor SSearchEverywhereWidget::GetButtonColor(ESettingType ButtonType) const
 {
-	FPropertyHolder::GetSettingsData<true>();
-	return FReply::Handled();
+	if (SearchSettingType == ButtonType)
+	{
+		return FLinearColor(1.0, 1.0, 0.0, 0.0);
+	}
+	static constexpr float Percentage = 0.24;
+	return FLinearColor(Percentage, Percentage, Percentage, Percentage);
 }
 
 #undef LOCTEXT_NAMESPACE

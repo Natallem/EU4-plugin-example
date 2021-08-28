@@ -5,7 +5,6 @@
 #include "ISettingsModule.h"
 #include "Misc/FileHelper.h"
 #include "IDetailTreeNode.h"
-#include "PropertyPath.h"
 #include "Details/AbstractSettingDetail.h"
 #include "Details/InnerCategoryDetail.h"
 #include "Details/PropertyDetail.h"
@@ -21,10 +20,11 @@
 #include "PropertyEditor/Private/DetailCategoryBuilderImpl.h"
 #include "PropertyEditor/Private/DetailGroup.h"
 #include "PropertyEditor/Private/DetailItemNode.h"
-#include "Multithreading/InputHandler.h"
+#include "Multithreading/InputData.h"
 
 DEFINE_LOG_CATEGORY(LogPropertyHolder);
 
+/** For more information see http://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html */
 namespace PrivateFieldHack
 {
 	template <typename Tag, typename Tag::type M>
@@ -101,11 +101,35 @@ FSettingsDataCollection::FSettingsDataCollection(const TArray<TSharedRef<FCatego
 
 int FSettingsDataCollection::Num() const
 {
-	return CategoryDetails.Num() + SectionDetails.Num() + InnerCategoryDetails.Num() + PropertyDetails.Num();
+	switch (SettingType)
+	{
+	case All:
+		return CategoryDetails.Num() + SectionDetails.Num() + InnerCategoryDetails.Num() + PropertyDetails.Num();
+	case Category:
+		return CategoryDetails.Num();
+	case Section:
+		return SectionDetails.Num();
+	case InnerCategory:
+		return InnerCategoryDetails.Num();
+	case Property:
+		return PropertyDetails.Num();
+	}
+	return 0;
 }
 
 TSharedRef<FAbstractSettingDetail> FSettingsDataCollection::operator[](int Index) const
 {
+	switch (SettingType)
+	{
+	case Category:
+		return CategoryDetails[Index];
+	case Section:
+		return SectionDetails[Index];
+	case InnerCategory:
+		return InnerCategoryDetails[Index];
+	case Property:
+		return PropertyDetails[Index];
+	}
 	int ShiftIndex = 0;
 	if (ShiftIndex + CategoryDetails.Num() > Index)
 	{
@@ -135,39 +159,35 @@ FPropertyHolder& FPropertyHolder::Get()
 	return Holder;
 }
 
-TOptional<TSharedRef<ISearchableItem>> FPropertyHolder::FindNextWord(
-	const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const
+TOptional<TSharedRef<ISearchableItem>> FPropertyHolder::FindNextItem(
+	const TSharedPtr<FInputData, ESPMode::ThreadSafe>& InputData)
 {
+	Data.SettingType = InputData->SearchType;
 	static const int IterationBeforeCheck = 100; // Parameter
 	int IterationCounter = 0;
-	for (int i = InputTask->NextIndexToCheck; i < Data.Num(); ++i)
+	for (int i = InputData->NextIndexToCheck; i < Data.Num(); ++i)
 	{
 		++IterationCounter;
 		if (IterationCounter == IterationBeforeCheck)
 		{
-			if (InputTask->bIsCancelled)
+			if (InputData->bIsCancelled)
 			{
 				return TOptional<TSharedRef<ISearchableItem>>();
 			}
 			IterationCounter = 0;
 		}
-		if (Data[i]->GetDisplayName().ToString().Find(*InputTask->InputRequest) != -1)
+		if (Data[i]->GetDisplayName().ToString().Find(*InputData->InputRequest) != -1)
 		{
-			InputTask->NextIndexToCheck = i + 1;
+			InputData->NextIndexToCheck = i + 1;
 			return TOptional<TSharedRef<ISearchableItem>>(Data[i]);
 		}
 	}
-	InputTask->NextIndexToCheck = Data.Num();
+	InputData->NextIndexToCheck = Data.Num();
 	return TOptional<TSharedRef<ISearchableItem>>();
 }
 
-TSharedRef<FAbstractSettingDetail> FPropertyHolder::GetSettingDetail(uint64 Index) const
-{
-	return Data[Index];
-}
-
 bool FPropertyHolder::UpdateTreeNodes(
-	const TSharedRef<FPropertyDetail> PropertyDetail,TSharedRef<FInnerCategoryDetail> InnerCategoryDetail  )
+	const TSharedRef<FPropertyDetail> PropertyDetail, TSharedRef<FInnerCategoryDetail> InnerCategoryDetail)
 {
 	bool bIsFoundPropertyNode = false;
 	FSettingsDataCollection Collection = GetSettingsData<false>();
@@ -175,9 +195,9 @@ bool FPropertyHolder::UpdateTreeNodes(
 	{
 		if (CurrentPropertyDetail->GetDisplayName().EqualTo(PropertyDetail->GetDisplayName()))
 		{
-			if (CurrentPropertyDetail->SettingDetail.IsValid())
+			if (CurrentPropertyDetail->PropertyDetailTreeNode.IsValid())
 			{
-				PropertyDetail->SettingDetail = CurrentPropertyDetail->SettingDetail.Pin();
+				PropertyDetail->PropertyDetailTreeNode = CurrentPropertyDetail->PropertyDetailTreeNode.Pin();
 				bIsFoundPropertyNode = true;
 				break;
 			}
@@ -217,6 +237,7 @@ FSettingsDataCollection FPropertyHolder::GetSettingsData(ISettingsModule& Settin
 	}
 
 	FSettingsDataCollection Result;
+	//Used to not duplicate Categories in Result
 	TMap<TSharedPtr<ISettingsCategory>, TSharedPtr<FCategoryDetail>> FoundCategories;
 
 	TSharedPtr<SDockTab> EditorSettingsTab;

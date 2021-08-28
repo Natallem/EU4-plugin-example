@@ -15,7 +15,7 @@ FPropertyDetail::FPropertyDetail(const TSharedRef<FInnerCategoryDetail>& InnerCa
                                  const TWeakPtr<FDetailTreeNode>& SettingDetail, const FText& PropertyDisplayName,
                                  int SettingIndex,
                                  bool bIsAdvanced)
-	: SettingDetail(SettingDetail),
+	: PropertyDetailTreeNode(SettingDetail),
 	  InnerCategoryDetail(InnerCategoryDetail),
 	  PropertyDisplayName(PropertyDisplayName),
 	  SettingIndex(SettingIndex),
@@ -34,15 +34,15 @@ void FPropertyDetail::DoAction()
 		FName("Editor"),
 		InnerCategoryDetail->SectionDetail->CategoryDetail->GetName(),
 		InnerCategoryDetail->SectionDetail->GetName());
-	TSharedPtr<FDetailTreeNode> DetailTreeNode = SettingDetail.Pin();
-	if (!SettingDetail.IsValid())
+	TSharedPtr<FDetailTreeNode> DetailTreeNode = PropertyDetailTreeNode.Pin();
+	if (!PropertyDetailTreeNode.IsValid())
 	{
 		if (!FPropertyHolder::Get().UpdateTreeNodes(AsShared(), InnerCategoryDetail))
 		{
 			SetTextInSearchBox(GetSDetailsView(), GetDisplayName());
 			return;
 		}
-		DetailTreeNode = SettingDetail.Pin();
+		DetailTreeNode = PropertyDetailTreeNode.Pin();
 	}
 	DetailTreeNode->SetIsHighlighted(true);
 	const TSharedPtr<SDetailTree> DetailTree = GetDetailTree(GetSDetailsView());
@@ -50,9 +50,9 @@ void FPropertyDetail::DoAction()
 	DetailTree->RequestScrollIntoView(DetailTreeNode.ToSharedRef());
 	GWorld->GetTimerManager().SetTimer(TimerHandle, [this]()
 	{
-		if (SettingDetail.IsValid())
+		if (PropertyDetailTreeNode.IsValid())
 		{
-			SettingDetail.Pin()->SetIsHighlighted(false);
+			PropertyDetailTreeNode.Pin()->SetIsHighlighted(false);
 		}
 	}, 3.0f, false);
 }

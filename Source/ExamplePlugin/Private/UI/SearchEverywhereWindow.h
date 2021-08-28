@@ -26,6 +26,7 @@ public:
 
 	void Construct(const FArguments& InArgs, TWeakPtr<SWidget> InPreviousFocusedWidget);
 
+	/** This method uses to detect that user clicked outside plugin window border and it's necessary to close plugin window */
 	virtual void OnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
 	                             const FFocusEvent& InFocusEvent) override;
 
@@ -36,7 +37,10 @@ public:
 	TSharedPtr<SSearchEverywhereWidget> GetSearchEverywhereWidget() const;
 	TSharedRef<FSearcher> GetSearcher() const;
 private:
-	FExamplePluginModule& ParentModule = FModuleManager::GetModuleChecked<FExamplePluginModule>(TEXT("ExamplePlugin"));
+	FExamplePluginModule& PluginModule = FModuleManager::GetModuleChecked<FExamplePluginModule>(TEXT("ExamplePlugin"));
+
+	/** WeakPtr to previous focused window to check if user input key can be handled by that window, if command is
+	 *cannot be processed by plugin window. */
 	TWeakPtr<SWidget> PreviousFocusedWidget;
 	TSharedPtr<SSearchEverywhereWidget> InnerWidget;
 	bool bNeedToClose = true;

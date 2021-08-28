@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "ISettingsEditorModel.h"
+#include "SettingItemTypes.h"
 #include "Engine/EngineTypes.h"
 #include "Modules/ModuleManager.h"
 class SDetailsView;
-class FInputHandler;
+class FInputData;
 class ISearchableItem;
-// #include "Multithreading/InputHandler.h"
 class ISettingsCategory;
 class ISettingsModule;
 class FAbstractSettingDetail;
@@ -37,29 +37,42 @@ struct FSettingsDataCollection
 	TArray<TSharedRef<FInnerCategoryDetail>> InnerCategoryDetails;
 	TArray<TSharedRef<FPropertyDetail>> PropertyDetails;
 
-	int Num() const;;
+	int Num() const;
 
 	TSharedRef<FAbstractSettingDetail> operator[](int Index) const;
+
+	/** Type of current Input holder. Switch types of Details to Iterate throw */
+	ESettingType SettingType = All;
 };
 
 class FPropertyHolder
 {
 public:
+	/** Uses FPropertyHolder as standalone */
 	static FPropertyHolder& Get();
 
-	TOptional<TSharedRef<ISearchableItem>> FindNextWord(
-		const TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask) const;
+	/** Try to find next item, corresponding to request in InputTask. Uses FInputData::NextIndexToCheck as start
+	 * position for searching and increments it in case item was found or no more items can be found ever. Also checks
+	 * while searching that Input was not changed and InputData was not cancelled. 
+	 * @return Next satisfying item or Nothing if there is no more unchecked items in Holder or Input is cancelled
+	 */
+	TOptional<TSharedRef<ISearchableItem>> FindNextItem(
+		const TSharedPtr<FInputData, ESPMode::ThreadSafe>& InputData);
 
-	TSharedRef<FAbstractSettingDetail> GetSettingDetail(uint64 Index) const;
-
+	/** Finds new valid TreeNode in Settings Window for FPropertyDetail::PropertyDetailTreeNode and
+	 *FInnerCategoryDetail::CategoryTreeNode. Used in cases then Settings window tab changed and previous TreeNodes are invalid.
+	 * @return wether Settings window is accessible and data from it collected successfully
+	 */
 	bool UpdateTreeNodes(
 		const TSharedRef<FPropertyDetail> PropertyDetail, TSharedRef<FInnerCategoryDetail> InnerCategoryDetail);
 
+	/** Get all types of settings data from Settings Editor Window. Uses private field to access property information.
+	 *This function is template in case of Log found properties (use FPropertyHolder::Get().GetSettingsData<true>())*/
 	template <bool bShouldLog>
 	static FSettingsDataCollection GetSettingsData(ISettingsModule& SettingModule = GetSettingModule());
 
 	static ISettingsModule& GetSettingModule();
-	FTimerHandle TimerHandle;
+
 private:
 	FPropertyHolder();
 

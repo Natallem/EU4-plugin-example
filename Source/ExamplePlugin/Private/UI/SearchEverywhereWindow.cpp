@@ -43,7 +43,8 @@ void SSearchEverywhereWindow::Construct(const FArguments& InArgs,
 	);
 	SetOnWindowClosed(FOnWindowClosed::CreateLambda([this](const TSharedRef<SWindow>& Window)
 	{
-		ParentModule.PreviousSearchRequest = InnerWidget->GetCurrentSearchRequest();
+		GetSearcher()->SetInput("", All);
+		PluginModule.PreviousSearchRequest = InnerWidget->GetCurrentSearchRequest();
 	}));
 }
 
@@ -65,7 +66,7 @@ FReply SSearchEverywhereWindow::OnKeyDown(const FGeometry& MyGeometry, const FKe
 			RequestDestroyWindow();
 			return FReply::Handled();
 		}
-		if (ParentModule.PluginCommands->ProcessCommandBindings(InKeyEvent))
+		if (PluginModule.PluginCommands->ProcessCommandBindings(InKeyEvent))
 		{
 			return FReply::Handled();
 		}
@@ -94,5 +95,5 @@ TSharedPtr<SSearchEverywhereWidget> SSearchEverywhereWindow::GetSearchEverywhere
 
 TSharedRef<FSearcher> SSearchEverywhereWindow::GetSearcher() const
 {
-	return ParentModule.Searcher;
+	return PluginModule.Searcher;
 }

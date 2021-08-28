@@ -27,7 +27,6 @@ void FExamplePluginModule::StartupModule()
 		this, &FExamplePluginModule::OnApplicationPreInputKeyDownListener);
 
 	PluginCommands = MakeShareable(new FUICommandList);
-
 	PluginCommands->MapAction(
 		FExamplePluginCommands::Get().OpenPluginWindow,
 		FExecuteAction::CreateRaw(this, &FExamplePluginModule::PluginButtonClicked),
@@ -36,10 +35,8 @@ void FExamplePluginModule::StartupModule()
 	// Append to level editor module so that shortcuts are accessible in level editor
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));
 	LevelEditorModule.GetGlobalLevelEditorActions()->Append(PluginCommands.ToSharedRef());
-	//todo add to asset editor
 	IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
 	MainFrameModule.OnMainFrameCreationFinished().AddRaw(this, &FExamplePluginModule::OnMainFrameLoaded);
-
 }
 
 
@@ -60,7 +57,6 @@ void FExamplePluginModule::ShutdownModule()
 		IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
 		MainFrameModule.OnMainFrameCreationFinished().RemoveAll(this);
 	}
-	
 }
 
 void FExamplePluginModule::PluginButtonClicked()
@@ -77,6 +73,7 @@ void FExamplePluginModule::PluginButtonClicked()
 		ExistingWindow =
 			SNew(SSearchEverywhereWindow, PreviousFocusedUserWidget)
 			.PreviousSearchRequest(PreviousSearchRequest);
+
 		FSlateApplication::Get().AddWindow(ExistingWindow.ToSharedRef());
 	}
 	PluginWindow = ExistingWindow;
@@ -85,13 +82,11 @@ void FExamplePluginModule::PluginButtonClicked()
 void FExamplePluginModule::OnApplicationPreInputKeyDownListener(const FKeyEvent& InKeyEvent)
 {
 	// todo save many users
-	const FInputChord CheckChord(InKeyEvent.GetKey(),
-	                             EModifierKey::FromBools(InKeyEvent.IsControlDown(), InKeyEvent.IsAltDown(),
-	                                                     InKeyEvent.IsShiftDown(), InKeyEvent.IsCommandDown()));
-	if (FExamplePluginCommands::Get().OpenPluginWindow->HasActiveChord(CheckChord))
+	const TSharedRef<const FInputChord> CommandChord = FExamplePluginCommands::Get().OpenPluginWindow->GetActiveChord(
+		EMultipleKeyBindingIndex::Primary);
+	if (CommandChord->Key == InKeyEvent.GetKey())
 	{
 		LastKeyboardUserIndex = InKeyEvent.GetUserIndex();
-		LastKeyboardUserInput = InKeyEvent.GetKey();
 	}
 }
 
@@ -100,7 +95,7 @@ void FExamplePluginModule::OnMainFrameLoaded(TSharedPtr<SWindow> InRootWindow, b
 	FPropertyHolder::Get();
 }
 
-void FExamplePluginModule::HandleFoundWords(const FResultItemFoundMsg& InMessage,
+void FExamplePluginModule::HandleFoundWords(const FItemFoundMsg& InMessage,
                                             const TSharedRef<IMessageContext, ESPMode::ThreadSafe>& InContext)
 {
 	if (const TSharedPtr<SSearchEverywhereWindow> Window = PluginWindow.Pin())

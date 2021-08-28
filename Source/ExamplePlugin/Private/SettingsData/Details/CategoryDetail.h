@@ -22,5 +22,7 @@ public:
 private:
 	FText CategoryDisplayName;
 	ISettingsSectionPtr FirstSettingsSection;
+
+	/** @return First section that displays in Settings Editor Tab */
 	TSharedPtr<ISettingsSection> GetFirstSection() const;
 };

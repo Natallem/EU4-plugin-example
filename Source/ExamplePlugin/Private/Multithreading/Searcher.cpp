@@ -1,12 +1,21 @@
 #include "Searcher.h"
 
-#include "ResultItemFoundMsg.h"
+#include "ItemFoundMsg.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 #include "SettingsData/PropertyHolder.h"
+#include "SettingsData/SettingItemTypes.h"
 
 FSearcher::FSearcher(int ChunkSize, const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe>& MessageEndpoint)
 	: MessageEndpoint(MessageEndpoint),
 	  ChunkSize(ChunkSize),
-	  InputHandlerPtr(MakeShared<FInputHandler, ESPMode::ThreadSafe>(FString(), 0, 0)),
+	  InputData(MakeShared<FInputData, ESPMode::ThreadSafe>(FString(), 0, 0, All)),
 	  Thread(FRunnableThread::Create(this, TEXT("SearchEverywhereThread"), 0, TPri_Normal))
 {
 }
@@ -35,32 +44,10 @@ uint32 FSearcher::Run()
 		{
 			return 0;
 		}
-		TSharedPtr<FInputHandler, ESPMode::ThreadSafe> InputHandlerCopy;
-		{
-			FScopeLock ScopeLock(&CriticalSection);
-			if (!InputHandlerPtr->bIsProcessRequestFinished)
-			{
-				if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.
-					Pin())
-				{
-					FResultItemFoundMsg* Message = InputHandlerPtr->GetOutputFromBuffer();
-					if (Message)
-					{
-						CurrentMessageEndpoint->Send(Message, CurrentMessageEndpoint->GetAddress());
-					}
-				}
-				// if need to find more or need to fill buffer
-				if (InputHandlerPtr->DesiredOutputSize > InputHandlerPtr->FoundOutputCounter || InputHandlerPtr->
-					DesiredBufferSize < InputHandlerPtr->Buffer.Num() && !InputHandlerPtr->bIsAllDataFoundInBuffer)
-				{
-					InputHandlerCopy = InputHandlerPtr;
-				}
-			}
-		}
-		if (InputHandlerCopy.IsValid())
+		if (TSharedPtr<FInputData, ESPMode::ThreadSafe> InputHandlerCopy = CheckIfCurrentInputNeedToBeProcessed())
 		{
 			bIsInputChangedDuringSearching =
-				ExecuteFindResultTask(InputHandlerCopy)
+				ProcessCurrentInput(InputHandlerCopy)
 				|| FillBuffer(InputHandlerCopy);
 		}
 	}
@@ -72,21 +59,22 @@ void FSearcher::Stop()
 	bShouldStopThread = true;
 	{
 		FScopeLock ScopeLock(&CriticalSection);
-		InputHandlerPtr->bIsCancelled = true;
+		InputData->bIsCancelled = true;
 	}
 	WakeUpWorkerEvent->Trigger();
 }
 
-void FSearcher::SetInput(const FString& NewInput)
+void FSearcher::SetInput(const FString& NewInput, ESettingType SearchType)
 {
-	TWeakPtr<FInputHandler, ESPMode::ThreadSafe> InputHandlerWeakPtr;
+	TWeakPtr<FInputData, ESPMode::ThreadSafe> InputHandlerWeakPtr;
 	bool IsEmptyInput;
 	{
 		FScopeLock ScopeLock(&CriticalSection);
-		InputHandlerPtr->bIsCancelled = true;
-		InputHandlerPtr = MakeShared<FInputHandler, ESPMode::ThreadSafe>(NewInput, ChunkSize, ChunkSize);
-		IsEmptyInput = InputHandlerPtr->bIsProcessRequestFinished;
-		InputHandlerWeakPtr = InputHandlerPtr;
+		// cancel previous request and replace processing input data with new input data
+		InputData->bIsCancelled = true;
+		InputData = MakeShared<FInputData, ESPMode::ThreadSafe>(NewInput, ChunkSize, ChunkSize, SearchType);
+		IsEmptyInput = InputData->bIsProcessingFinished;
+		InputHandlerWeakPtr = InputData;
 	}
 	if (IsEmptyInput)
 	{
@@ -94,6 +82,7 @@ void FSearcher::SetInput(const FString& NewInput)
 	}
 	else
 	{
+		// trigger search thread if it was waiting for new input
 		WakeUpWorkerEvent->Trigger();
 	}
 }
@@ -103,9 +92,25 @@ void FSearcher::FindMoreDataResult()
 {
 	{
 		FScopeLock ScopeLock(&CriticalSection);
-		InputHandlerPtr->DesiredOutputSize += ChunkSize;
+		InputData->DesiredOutputSize += ChunkSize;
 	}
 	WakeUpWorkerEvent->Trigger();
+}
+
+TSharedPtr<FInputData, ESPMode::ThreadSafe> FSearcher::CheckIfCurrentInputNeedToBeProcessed()
+{
+	FScopeLock ScopeLock(&CriticalSection);
+	if (!InputData->bIsProcessingFinished)
+	{
+		InputData->MoveBufferedDataToOutput(MessageEndpoint);
+		// if need to find more or need to fill buffer
+		if (InputData->DesiredOutputSize > InputData->FoundOutputCounter || InputData->
+			DesiredBufferSize < InputData->Buffer.Num() && !InputData->bIsAllDataFoundInBuffer)
+		{
+			return InputData;
+		}
+	}
+	return nullptr;
 }
 
 void FSearcher::EnsureCompletion()
@@ -117,14 +122,14 @@ void FSearcher::EnsureCompletion()
 	}
 }
 
-bool FSearcher::ExecuteFindResultTask(TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& InputTask)
+bool FSearcher::ProcessCurrentInput(TSharedPtr<FInputData, ESPMode::ThreadSafe>& InputTask)
 {
 	while (InputTask->DesiredOutputSize > InputTask->FoundOutputCounter)
 	{
-		TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextWord(InputTask);
+		TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextItem(InputTask);
 		if (FoundWord)
 		{
-			if (!AddFoundItemToResult(MoveTemp(FoundWord.GetValue()), InputTask))
+			if (!SendFoundItem(MoveTemp(FoundWord.GetValue()), InputTask))
 			{
 				return false;
 			}
@@ -143,60 +148,58 @@ bool FSearcher::ExecuteFindResultTask(TSharedPtr<FInputHandler, ESPMode::ThreadS
 	return true;
 }
 
-bool FSearcher::FillBuffer(TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task) const
+bool FSearcher::FillBuffer(TSharedPtr<FInputData, ESPMode::ThreadSafe>& InputData)
 {
-	if (!Task->bIsProcessRequestFinished)
+	if (!InputData->bIsProcessingFinished)
 	{
-		while (Task->DesiredBufferSize > Task->Buffer.Num())
+		while (InputData->DesiredBufferSize > InputData->Buffer.Num())
 		{
-			TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextWord(Task);
+			TOptional<TSharedRef<ISearchableItem>> FoundWord = FPropertyHolder::Get().FindNextItem(InputData);
 			if (FoundWord)
 			{
-				Task->Buffer.Push(MoveTemp(FoundWord.GetValue()));
+				InputData->Buffer.Push(MoveTemp(FoundWord.GetValue()));
 			}
 			else
 			{
-				return Task->bIsAllDataFoundInBuffer = !Task->bIsCancelled; // todo check if ok
+				return InputData->bIsAllDataFoundInBuffer = !InputData->bIsCancelled;
 			}
 		}
 	}
 	return true;
 }
 
-bool FSearcher::AddFoundItemToResult(TSharedRef<ISearchableItem>&& Item,
-                                     TSharedPtr<FInputHandler, ESPMode::ThreadSafe>& Task)
+bool FSearcher::SendFoundItem(TSharedRef<ISearchableItem>&& Item,
+                              TSharedPtr<FInputData, ESPMode::ThreadSafe>& InputDataWeakPtr)
 {
 	FScopeLock ScopeLock(&CriticalSection);
-	if (!Task->bIsCancelled)
+	if (!InputDataWeakPtr->bIsCancelled)
 	{
-		++InputHandlerPtr->FoundOutputCounter;
+		++InputData->FoundOutputCounter;
 		if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
 		{
 			CurrentMessageEndpoint->Send(
-				new FResultItemFoundMsg(false, MoveTemp(Item)), CurrentMessageEndpoint->GetAddress());
-		}
-		return true;
-	}
-	return false;
-}
-
-bool FSearcher::AllWordsFound(const TWeakPtr<FInputHandler, ESPMode::ThreadSafe> InputTaskWeakPtr)
-{
-	FScopeLock ScopeLock(&CriticalSection);
-	if (const TSharedPtr<FInputHandler, ESPMode::ThreadSafe> InputTaskPtr = InputTaskWeakPtr.Pin())
-	{
-		if (!InputTaskPtr->bIsCancelled)
-		{
-			InputTaskPtr->bIsProcessRequestFinished = true;
-			if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
-			{
-				CurrentMessageEndpoint->Send(
-					new FResultItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
-			}
+				new FItemFoundMsg(false, MoveTemp(Item)), CurrentMessageEndpoint->GetAddress());
 			return true;
 		}
 	}
 	return false;
 }
 
-//todo call stop when window close
+bool FSearcher::AllWordsFound(const TWeakPtr<FInputData, ESPMode::ThreadSafe> InputTaskWeakPtr)
+{
+	FScopeLock ScopeLock(&CriticalSection);
+	if (const TSharedPtr<FInputData, ESPMode::ThreadSafe> InputTaskPtr = InputTaskWeakPtr.Pin())
+	{
+		if (!InputTaskPtr->bIsCancelled)
+		{
+			InputTaskPtr->bIsProcessingFinished = true;
+			if (const TSharedPtr<FMessageEndpoint, ESPMode::ThreadSafe> CurrentMessageEndpoint = MessageEndpoint.Pin())
+			{
+				CurrentMessageEndpoint->Send(
+					new FItemFoundMsg(), CurrentMessageEndpoint->GetAddress());
+				return true;
+			}
+		}
+	}
+	return false;
+}
